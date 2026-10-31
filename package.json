@@ -1,0 +1,13 @@
+{
+  "name": "mcaa-sports",
+  "version": "1.0.0",
+  "description": "MCAA Sports — fake-coin betting app for the Minecraft College Athletics Association",
+  "type": "module",
+  "main": "server.js",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  }
+}
