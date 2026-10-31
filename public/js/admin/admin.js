@@ -8,6 +8,7 @@ import { renderStats } from './stats.js';
 import { renderAwards } from './awards.js';
 import { renderUsers } from './users.js';
 import { renderSettings } from './settings.js';
+import { renderSpecials } from './specials.js';
 
 const TABS = [
   { key: 'overview', label: 'Overview', ico: 'chart' },
@@ -18,6 +19,7 @@ const TABS = [
   { key: 'results', label: 'Lock & Final Scores', ico: 'whistle' },
   { key: 'stats', label: 'Import Stats', ico: 'list' },
   { key: 'awards', label: 'Award Odds', ico: 'trophy' },
+  { key: 'specials', label: 'Specials', ico: 'star' },
   { key: 'users', label: 'Users & Balances', ico: 'user' },
   { key: 'settings', label: 'Settings & Backup', ico: 'gear' },
 ];
@@ -30,7 +32,7 @@ export async function viewAdmin(el, tab, args) {
       <section id="admin-body" style="min-width:0"></section>
     </div>`;
   const body = el.querySelector('#admin-body');
-  const map = { overview: renderOverview, teams: renderTeams, rosters: renderRosters, schedule: renderSchedule, lines: renderLines, results: renderResults, stats: renderStats, awards: renderAwards, users: renderUsers, settings: renderSettings };
+  const map = { overview: renderOverview, teams: renderTeams, rosters: renderRosters, schedule: renderSchedule, lines: renderLines, results: renderResults, stats: renderStats, awards: renderAwards, specials: renderSpecials, users: renderUsers, settings: renderSettings };
   await map[tab](body, args || []);
 }
 
@@ -53,6 +55,7 @@ async function renderOverview(el) {
     { done: awaiting === 0 && finals > 0, title: 'Lock betting, then enter final scores', text: awaiting ? `${awaiting} locked game${awaiting === 1 ? '' : 's'} waiting for a final` : `${finals} games final`, href: '#/admin/results' },
     { done: false, title: 'Import stats (settles player props)', text: 'Box scores & season stats', href: '#/admin/stats' },
     { done: store.awards.length > 0, title: 'Post award odds', text: `${store.awards.length} award markets`, href: '#/admin/awards' },
+    { done: store.specials.length > 0, title: 'Post specials (any yes/no or multiple-choice bet)', text: `${store.specials.filter((x) => x.status === 'open').length} open specials`, href: '#/admin/specials' },
   ];
   el.innerHTML = `
     ${adminHead('League Control Room', `Signed in as <b>${esc(store.user.username)}</b>${store.user.isOwner ? ' (owner)' : ''} · Season ${esc(season)}${wk ? ' · ' + esc(weekLabel(wk)) : ''}`)}

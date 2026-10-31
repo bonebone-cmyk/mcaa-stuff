@@ -41,6 +41,7 @@ export const store = {
   games: [],
   props: [],
   awards: [],
+  specials: [],
   seasons: [],
   stats: null, // { season, players, teams }
   myBets: null,
@@ -57,7 +58,7 @@ export const gameById = (id) => store.games.find((g) => g.id === id);
 
 export async function loadAll() {
   const d = await api('/api/bootstrap');
-  Object.assign(store, { user: d.user, settings: d.settings, teams: d.teams, players: d.players, games: d.games, props: d.props, awards: d.awards, seasons: d.seasons });
+  Object.assign(store, { user: d.user, settings: d.settings, teams: d.teams, players: d.players, games: d.games, props: d.props, awards: d.awards, specials: d.specials || [], seasons: d.seasons });
   if (!store.ui.season || !store.seasons.includes(store.ui.season)) store.ui.season = d.settings.currentSeason;
   store.stats = null;
   store.myBets = null;

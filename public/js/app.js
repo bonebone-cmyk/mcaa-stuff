@@ -1,5 +1,5 @@
 // MCAA Sports — app shell, auth screen and router.
-import { store, api, post, setToken, getToken, loadAll, onChange, esc, coins, icon, coinSvg, toast, toastErr, modal, formData } from './core.js';
+import { store, api, post, setToken, getToken, loadAll, onChange, esc, coins, icon, coinSvg, toast, toastErr, modal, formData, refreshUser } from './core.js';
 import { renderSlip, syncSelections } from './slip.js';
 import { viewBook } from './views/book.js';
 import { viewGame } from './views/game.js';
@@ -9,6 +9,7 @@ import { viewLeaderboard } from './views/leaderboard.js';
 import { viewTeams, viewTeam } from './views/teams.js';
 import { viewPlayers, viewPlayer } from './views/players.js';
 import { viewAdmin } from './admin/admin.js';
+import { viewSpecials } from './views/specials.js';
 
 const app = document.getElementById('app');
 
@@ -81,6 +82,7 @@ function renderAuth(mode = 'login') {
 /* ---------------------------------------------------------------- Shell */
 const NAV = [
   { href: '#/', key: 'book', label: 'Sportsbook', ico: 'football' },
+  { href: '#/specials', key: 'specials', label: 'Specials', ico: 'star' },
   { href: '#/futures', key: 'futures', label: 'Awards', ico: 'trophy' },
   { href: '#/bets', key: 'bets', label: 'My Bets', ico: 'ticket' },
   { href: '#/leaderboard', key: 'leaderboard', label: 'Leaders', ico: 'chart' },
@@ -123,6 +125,7 @@ function openUserMenu(e) {
   m.className = 'menu';
   m.innerHTML = `<div style="padding:8px 10px"><div class="bold">${esc(u.username)}</div><div class="small muted">${u.isOwner ? 'League owner · Admin' : u.isAdmin ? 'Admin' : 'Member'}</div></div><hr>
     <a href="#/bets">${icon('ticket')} My bets</a>
+    <a href="#/leaderboard">${icon('chart')} Leaderboard</a>
     <a href="#/players">${icon('users')} Players</a>
     <a href="#/teams">${icon('shield')} Teams</a>
     <button data-pw>${icon('key')} Change password</button><hr>
@@ -159,11 +162,13 @@ async function route() {
   document.querySelector('.layout')?.classList.toggle('no-slip', key === 'admin');
   if (currentRoute !== hash) window.scrollTo(0, 0);
   currentRoute = hash;
+  if (key !== 'bets') refreshUser().catch(() => {}); // keep the coin balance current (bets settle while you browse)
   try {
     switch (key) {
       case 'book': return await viewBook(view);
       case 'game': return await viewGame(view, parts[1]);
       case 'futures': return await viewFutures(view);
+      case 'specials': return await viewSpecials(view);
       case 'bets': return await viewBets(view);
       case 'leaderboard': return await viewLeaderboard(view);
       case 'teams': return await viewTeams(view);
@@ -203,7 +208,7 @@ document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState !== 'visible' || !store.user) return;
   try {
     const d = await api('/api/bootstrap');
-    Object.assign(store, { user: d.user, games: d.games, props: d.props, awards: d.awards, teams: d.teams, players: d.players, settings: d.settings, seasons: d.seasons });
+    Object.assign(store, { user: d.user, games: d.games, props: d.props, awards: d.awards, specials: d.specials || [], teams: d.teams, players: d.players, settings: d.settings, seasons: d.seasons });
     updateChrome();
   } catch {}
 });

@@ -1,4 +1,4 @@
-import { store, esc, icon, coins, coinSvg, fmtOdds, fmtWhen, loadMyBets, emptyState, api } from '../core.js';
+import { store, esc, icon, coins, coinSvg, fmtOdds, fmtWhen, loadMyBets, emptyState, api, refreshUser } from '../core.js';
 
 let filter = 'open';
 
@@ -9,7 +9,7 @@ export function betRows(bets) {
       : b.status === 'won' ? `<div class="s">Returned</div><div class="p green">+${coins(b.returned)}</div>`
       : b.status === 'lost' ? `<div class="s">Lost</div><div class="p red">-${coins(b.stake)}</div>`
       : `<div class="s">Refunded</div><div class="p muted">${coins(b.returned)}</div>`;
-    const market = { ml: 'Moneyline', spread: 'Point Spread', total: 'Total Points', homeTotal: 'Team Total', awayTotal: 'Team Total', exact: 'Exact Score', prop: 'Prop', award: 'Award Future' }[b.market] || b.market;
+    const market = { ml: 'Moneyline', spread: 'Point Spread', total: 'Total Points', homeTotal: 'Team Total', awayTotal: 'Team Total', exact: 'Exact Score', prop: 'Prop', award: 'Award Future', special: 'Special' }[b.market] || b.market;
     return `<div class="bet-row">
       <div class="bet-status ${b.status}">${lbl}</div>
       <div style="min-width:0"><div class="d">${esc(b.desc)}</div>
@@ -21,7 +21,7 @@ export function betRows(bets) {
 
 export async function viewBets(el) {
   el.innerHTML = '<div class="skeleton" style="height:200px"></div>';
-  const bets = await loadMyBets(true);
+  const [bets] = await Promise.all([loadMyBets(true), refreshUser().catch(() => {})]);
   const settled = bets.filter((b) => b.status !== 'open');
   const won = bets.filter((b) => b.status === 'won').length;
   const lost = bets.filter((b) => b.status === 'lost').length;

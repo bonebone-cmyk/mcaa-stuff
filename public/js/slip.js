@@ -8,11 +8,17 @@ let placing = false;
 
 export function selKey(s) {
   if (s.market === 'exact') return `exact:${s.gameId}`;
-  return `${s.market}:${s.propId || s.awardId || s.gameId}:${s.pick}`;
+  return `${s.market}:${s.propId || s.awardId || s.specialId || s.gameId}:${s.pick}`;
 }
 
 /** Look up the live odds/line for a selection from the store. */
 export function liveFor(s) {
+  if (s.market === 'special') {
+    const sp = store.specials.find((x) => x.id === s.specialId);
+    if (!sp || sp.status !== 'open' || sp.locked) return null;
+    const o = sp.options.find((x) => x.id === s.pick);
+    return o ? { odds: o.odds, line: null } : null;
+  }
   if (s.market === 'award') {
     const a = store.awards.find((x) => x.id === s.awardId);
     if (!a || a.status !== 'open' || a.locked) return null;
@@ -59,6 +65,11 @@ export function describe(s) {
       const pctx = pg ? `${teamById(pg.awayId)?.abbr || ''} @ ${teamById(pg.homeId)?.abbr || ''}` : '';
       if (pr.kind === 'player') return { pick: `${playerById(pr.playerId)?.name || 'Player'} ${ou} ${s.line}`, mk: statLabel(pr.stat), ctx: pctx };
       return { pick: `${ou} ${s.line}`, mk: pr.label, ctx: pctx };
+    }
+    case 'special': {
+      const sp = store.specials.find((x) => x.id === s.specialId);
+      const o = sp?.options.find((x) => x.id === s.pick);
+      return { pick: o?.label || 'Pick', mk: sp?.question || 'Special', ctx: sp?.category || 'League special' };
     }
     case 'award': {
       const a = store.awards.find((x) => x.id === s.awardId);
@@ -251,7 +262,7 @@ async function placeBets() {
   placing = true;
   renderSlip();
   try {
-    const r = await post('/api/bets', { bets: store.slip.map((s) => ({ key: s.key, market: s.market, gameId: s.gameId, propId: s.propId, awardId: s.awardId, pick: s.pick, line: s.line, odds: s.odds, stake: Number(s.stake), exact: s.exact })) });
+    const r = await post('/api/bets', { bets: store.slip.map((s) => ({ key: s.key, market: s.market, gameId: s.gameId, propId: s.propId, awardId: s.awardId, specialId: s.specialId, pick: s.pick, line: s.line, odds: s.odds, stake: Number(s.stake), exact: s.exact })) });
     store.user = r.user;
     store.slip = [];
     store.myBets = null;
@@ -263,7 +274,7 @@ async function placeBets() {
     if (e.status === 409 && e.data?.changed) {
       // refresh data so new odds show
       const d = await api('/api/bootstrap');
-      Object.assign(store, { games: d.games, props: d.props, awards: d.awards });
+      Object.assign(store, { games: d.games, props: d.props, awards: d.awards, specials: d.specials || [] });
       emit();
     }
     toastErr(e);

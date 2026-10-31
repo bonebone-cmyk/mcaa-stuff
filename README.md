@@ -15,6 +15,7 @@ The sportsbook for the **Minecraft College Athletics Association**. You bet with
   - Player props (only the stats that fit the player's position)
   - Custom game-stat over/unders
   - Award futures
+  - **Specials**: any yes/no or multiple-choice question, like "Will Fresno be the #1 seed?" or "Who wins the conference?"
 - A bet slip with quick-stake buttons. If an odd changes before you place a bet, the slip warns you.
 - Pages for My Bets, coin history, the leaderboard, team pages (roster, schedule, leaders) and player pages (season stats, game log, open props).
 - A Game of the Week banner, plus layouts for phones and desktops.
@@ -33,6 +34,7 @@ The sportsbook for the **Minecraft College Athletics Association**. You bet with
 - Import stats: game box scores (these grade player props automatically), season player stats and team season stats.
 - Award odds for Craftsman, QBOTY, WROTY, RBOTY, OLOTY, DLOTY, KOTY, POTY, ROTY, FOTY, OPOY and DPOY.
   - After you import stats, the app recommends candidates for each award with suggested odds.
+- Specials: write any question and give it Yes/No, team or custom answers, each with its own odds. You can feature one on the home page, lock it, pick the result to pay winners, and undo a result if needed. If you remove an answer, bets on it are refunded.
 - Users: adjust balances (one user or everyone), give or remove admin, reset passwords, view or void bets, delete accounts.
 - Settings: starting coins, minimum and maximum bet, current season and week, and an announcement banner.
 - Backup and restore everything as one file.
