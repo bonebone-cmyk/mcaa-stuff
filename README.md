@@ -39,19 +39,26 @@ The sportsbook for the **Minecraft College Athletics Association**. You bet with
 
 The site starts **blank**. It has no sample teams, games or players.
 
-## Running it
+## Starting it (one double-click)
 
-You need [Node.js](https://nodejs.org) 18 or newer. There's nothing to install beyond that.
+1. **Download** the app: [click here for the ZIP](https://github.com/bonebone-cmyk/mcaa-stuff/archive/refs/heads/claude/kind-tesla-lku65o.zip). Unzip it anywhere, like your Desktop.
+2. **Double-click** the launcher for your computer:
+   - Windows: **`Start MCAA Sports (Windows).bat`**
+   - Mac: **`Start MCAA Sports (Mac).command`**
+3. The site opens in your browser. **Sign up first.** The first account becomes the league owner (admin).
 
-```bash
-npm start            # or: node server.js
-```
+That's it. The first time, the launcher downloads Node.js (about 30–45 MB) into the app folder by itself. You don't need to install anything. After that it starts in a second or two.
 
-Open http://localhost:3000.
+- **Keep the black window open** while people use the site. Closing it shuts the site down. Double-click the launcher again to bring it back. Everything is saved.
+- **Friends on the same Wi-Fi** can join with the "Friends on your Wi-Fi" link shown in that window.
+- **First-time security pop-ups** (normal for files downloaded from the internet):
+  - **Windows** may say "Windows protected your PC". Click **More info**, then **Run anyway**.
+  - **Mac** may say it can't verify the developer. Open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**. Older Macs: right-click the file, choose **Open**, then **Open**.
+- Your data lives in the `data` folder inside the app folder. To move to a new computer, copy that folder or use **Admin → Settings & Backup**.
 
-> **The first account created becomes the league owner (admin).** Sign up right after you launch it. To reserve owner for one username, start the server with `OWNER_USERNAME=yourname`.
+### Advanced options
 
-Settings (environment variables):
+If you're comfortable with a terminal, `npm start` also works. These environment variables are optional:
 
 | Variable | Default | What it does |
 |---|---|---|

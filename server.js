@@ -5,6 +5,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import os from 'node:os';
+import { exec } from 'node:child_process';
 import {
   STATS, AWARD_BY_KEY, statsForPositions, statValue, sumStats, isValidOdds, payoutFor,
   normName, parsePositions, normalizeClass, fmtOdds, fmtLine,
@@ -1126,12 +1128,43 @@ const server = http.createServer(async (req, res) => {
   serveFile(res, file);
 });
 
+function openBrowser(url) {
+  const cmd = process.platform === 'win32' ? `start "" "${url}"` : process.platform === 'darwin' ? `open "${url}"` : `xdg-open "${url}"`;
+  exec(cmd, () => {});
+}
+
+function lanAddresses() {
+  const out = [];
+  for (const list of Object.values(os.networkInterfaces())) {
+    for (const a of list || []) if (a.family === 'IPv4' && !a.internal) out.push(a.address);
+  }
+  return out;
+}
+
+server.on('error', (e) => {
+  if (e.code === 'EADDRINUSE') {
+    console.log(`\n  MCAA Sports is already running (port ${PORT} is in use). Opening it in your browser…\n`);
+    if (process.env.OPEN_BROWSER) openBrowser(`http://localhost:${PORT}`);
+    setTimeout(() => process.exit(0), 1500);
+    return;
+  }
+  throw e;
+});
+
 server.listen(PORT, () => {
-  console.log(`\n  ⛏  MCAA Sports running at http://localhost:${PORT}`);
-  console.log(`     Data folder: ${DATA_DIR}`);
+  const url = `http://localhost:${PORT}`;
+  console.log('\n  ==============================================');
+  console.log('    ⛏  MCAA SPORTS IS RUNNING');
+  console.log('  ==============================================');
+  console.log(`    On this computer:   ${url}`);
+  for (const ip of lanAddresses()) console.log(`    Friends on your Wi-Fi: http://${ip}:${PORT}`);
+  console.log(`    Data is saved in:   ${DATA_DIR}`);
   if (!db.users.some((u) => u.isOwner)) {
     console.log(process.env.OWNER_USERNAME
-      ? `     No owner yet — sign up as "${process.env.OWNER_USERNAME}" to become the league owner/admin.\n`
-      : '     No accounts yet — the FIRST account you create becomes the league owner/admin.\n');
+      ? `\n    No owner yet — sign up as "${process.env.OWNER_USERNAME}" to become the league owner/admin.`
+      : '\n    No accounts yet — the FIRST account you create becomes the league owner/admin.');
   }
+  console.log('\n    Keep this window open while people are using the site.');
+  console.log('    Close it (or press Ctrl+C) to shut the site down.\n');
+  if (process.env.OPEN_BROWSER) openBrowser(url);
 });
