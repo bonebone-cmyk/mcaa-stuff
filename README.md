@@ -39,43 +39,33 @@ The sportsbook for the **Minecraft College Athletics Association**. You bet with
 
 The site starts **blank**. It has no sample teams, games or players.
 
-## Starting it (one double-click)
+## Put it on the internet (free, about 2 minutes, one time)
 
-1. **Download** the app: [click here for the ZIP](https://github.com/bonebone-cmyk/mcaa-stuff/archive/refs/heads/claude/kind-tesla-lku65o.zip). Unzip it anywhere, like your Desktop.
-2. **Double-click** the launcher for your computer:
-   - Windows: **`Start MCAA Sports (Windows).bat`**
-   - Mac: **`Start MCAA Sports (Mac).command`**
-3. The site opens in your browser. **Sign up first.** The first account becomes the league owner (admin).
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/bonebone-cmyk/mcaa-stuff)
 
-That's it. The first time, the launcher downloads Node.js (about 30–45 MB) into the app folder by itself. You don't need to install anything. After that it starts in a second or two.
+1. Click the **Deploy to Cloudflare** button above.
+2. Log in to Cloudflare, or make a free account. You don't need a credit card. Connect your GitHub account when it asks.
+3. Click **Deploy** and wait about a minute.
+4. You get a link like **`https://mcaa-sports.<your-name>.workers.dev`**. Open it and **sign up first**: the first account becomes the league owner (admin).
+5. Send that link to everyone. They just open it, sign up and bet. Nobody downloads anything.
 
-- **Keep the black window open** while people use the site. Closing it shuts the site down. Double-click the launcher again to bring it back. Everything is saved.
-- **Friends on the same Wi-Fi** can join with the "Friends on your Wi-Fi" link shown in that window.
-- **First-time security pop-ups** (normal for files downloaded from the internet):
-  - **Windows** may say "Windows protected your PC". Click **More info**, then **Run anyway**.
-  - **Mac** may say it can't verify the developer. Open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**. Older Macs: right-click the file, choose **Open**, then **Open**.
-- Your data lives in the `data` folder inside the app folder. To move to a new computer, copy that folder or use **Admin → Settings & Backup**.
+Good to know:
+- The site stays on all the time. You don't need to keep your computer on.
+- Your league data is saved by Cloudflare. Download a backup now and then from **Admin → Settings & Backup** anyway.
+- Cloudflare's free plan easily covers a league: about 100,000 requests a day.
+- Optional: to reserve the owner account for one username, open the Worker in the Cloudflare dashboard and go to **Settings → Variables and Secrets**. Add `OWNER_USERNAME` = your username.
 
-### Advanced options
+## Run it on your own computer instead (optional)
 
-If you're comfortable with a terminal, `npm start` also works. These environment variables are optional:
+Use this only if you don't want it online. Only people on your Wi-Fi can reach it, and only while your computer is on.
 
-| Variable | Default | What it does |
-|---|---|---|
-| `PORT` | `3000` | Port to listen on |
-| `DATA_DIR` | `./data` | Where the database (`db.json`) and logos are stored |
-| `OWNER_USERNAME` | *(unset)* | When set, only this username can become the owner |
+1. [Download the ZIP](https://github.com/bonebone-cmyk/mcaa-stuff/archive/refs/heads/claude/kind-tesla-lku65o.zip) and unzip it.
+2. Double-click **`Start MCAA Sports (Windows).bat`** or **`Start MCAA Sports (Mac).command`**. If Node.js isn't installed, the launcher downloads it by itself the first time. Then the site opens in your browser.
+3. Keep the black window open while people use it. Friends on your Wi-Fi use the "Friends on your Wi-Fi" link it shows.
+   - **Windows** may say "Windows protected your PC". Click **More info**, then **Run anyway**.
+   - **Mac** may say it can't verify the developer. Go to **System Settings → Privacy & Security** and click **Open Anyway**.
 
-## Hosting it online
-
-The app needs a small always-on Node server, so GitHub Pages won't work. Any Node host will:
-- Render, Railway or Fly.io
-- A VPS
-- A spare PC
-
-Run `node server.js` on it.
-
-**Important:** point `DATA_DIR` at **persistent storage** (for example a Render disk or a Railway volume). Otherwise free hosts can wipe your data when they restart. Download a backup from **Admin → Settings & Backup** now and then either way.
+Advanced: `npm start` also works. It reads these optional environment variables: `PORT` (default `3000`), `DATA_DIR` (default `./data`) and `OWNER_USERNAME`.
 
 ## Weekly admin flow
 
@@ -89,7 +79,10 @@ Run `node server.js` on it.
 ## Project layout
 
 ```
-server.js                 HTTP server, JSON-file database, auth, betting and settlement
+lib/league.js             League engine: accounts, betting, settlement, admin API (shared by both versions)
+worker.js                 Cloudflare version (website): serves the site; data lives in a Durable Object
+wrangler.jsonc            Cloudflare settings
+server.js                 Node version (your own computer): local server, data in ./data
 public/index.html         App shell
 public/css/app.css        Styles
 public/js/shared.js       Positions, stats, awards, odds math (shared by server and browser)

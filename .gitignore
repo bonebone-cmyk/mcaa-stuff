@@ -6,3 +6,5 @@ data/
 .node-tmp/
 node.zip
 node.tgz
+.wrangler/
+.dev.vars
