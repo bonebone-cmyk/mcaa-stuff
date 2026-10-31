@@ -41,13 +41,20 @@ The site starts **blank**. It has no sample teams, games or players.
 
 ## Put it on the internet (free, about 2 minutes, one time)
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/bonebone-cmyk/mcaa-stuff)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/bonebone-cmyk/mcaa-stuff/tree/claude/kind-tesla-lku65o)
 
 1. Click the **Deploy to Cloudflare** button above.
 2. Log in to Cloudflare, or make a free account. You don't need a credit card. Connect your GitHub account when it asks.
 3. Click **Deploy** and wait about a minute.
 4. You get a link like **`https://mcaa-sports.<your-name>.workers.dev`**. Open it and **sign up first**: the first account becomes the league owner (admin).
 5. Send that link to everyone. They just open it, sign up and bet. Nobody downloads anything.
+
+**If the button gives an error**, do it from the Cloudflare dashboard instead:
+1. Go to [dash.cloudflare.com](https://dash.cloudflare.com), then **Compute (Workers) → Workers & Pages → Create → Import a repository**.
+2. Connect GitHub and pick **`mcaa-stuff`**.
+3. Set **Project name** to **`mcaa-sports`**. It has to match exactly. Leave the other boxes as they are and click **Deploy**.
+4. The first build may fail, because your repo's main branch doesn't have the app. That's expected. Open the new Worker, go to **Settings → Build → Branch control**, set the production branch to **`claude/kind-tesla-lku65o`**, and save.
+5. Go to **Deployments** and run the build again if it doesn't start by itself. When it finishes, your link appears at the top of the Worker's page.
 
 Good to know:
 - The site stays on all the time. You don't need to keep your computer on.
