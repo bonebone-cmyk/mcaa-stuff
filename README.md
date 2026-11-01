@@ -78,12 +78,17 @@ Advanced: `npm start` also works. It reads these optional environment variables:
 
 ## Weekly admin flow
 
-1. **Odds & Lines**: post spreads, moneylines and totals for the week, then player props on each game's page.
+1. **Odds & Lines**
+   - The first time only: open **Team power ratings** at the bottom of the page and tag teams Elite, Good, Avg, Weak or Bad. Click **Save ratings**.
+   - Click **✨ Suggest lines**. It fills in the spread, moneyline and total for every game, plus team totals and exact-score odds. Change anything that looks off, then click **Save lines**.
+   - Click **✨ Auto player props**. It suggests props for every game from players' per-game stats. Untick anything you don't want, then post.
+   - Typing a spread yourself fills in the moneyline automatically. Juice defaults to -110.
 2. Users bet.
 3. **Lock & Final Scores**: lock the week right before you sim. All games are simmed at once, so dates and times are just for flavor.
-4. Enter final scores. Game-line bets settle immediately.
+4. Enter final scores. Game-line bets settle immediately, and team ratings update from the results.
 5. **Import Stats**: paste or upload each game's box score. Player props grade themselves.
 6. **Award Odds**: click *Recommend* to get stat-based candidates and odds, then post or update the boards. Click *Winner* when an award is announced.
+7. **Specials**: for "Pick a team" questions, click **✨ Auto odds from team ratings**.
 
 ## Project layout
 
@@ -98,5 +103,5 @@ public/js/shared.js       Positions, stats, awards, odds math (shared by server 
 public/js/core.js         API client, store, helpers, icons, modals
 public/js/slip.js         Bet slip
 public/js/views/*         Bettor pages
-public/js/admin/*         Admin pages, import parsers and the OCR importer
+public/js/admin/*         Admin pages, import parsers, the OCR importer and the odds helper (oddsmaker.js)
 ```

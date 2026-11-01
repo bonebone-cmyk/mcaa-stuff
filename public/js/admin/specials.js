@@ -2,6 +2,7 @@ import { store, post, del, esc, icon, teamById, teamLogo, modal, toast, toastErr
 import { isValidOdds } from '../shared.js';
 import { adminHead } from './admin.js';
 import { sortSpecials } from '../views/specials.js';
+import { powerRatings, teamPickOdds } from './oddsmaker.js';
 
 let draft = null;
 
@@ -96,7 +97,8 @@ function renderForm(box, ctx) {
           <button class="btn icon ghost" data-rm="${i}" title="Remove" ${d.options.length <= 2 ? 'disabled' : ''}>${icon('x')}</button></div>`).join('')}
         <div class="row wrap">
           ${d.mode === 'teams' ? `<select id="add-team" style="width:auto"><option value="">+ Add a team…</option>${ctx.teams.filter((t) => !d.options.some((o) => o.teamId === t.id)).map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join('')}</select>
-            <button class="btn sm" data-allteams>Add every team</button>` : ''}
+            <button class="btn sm" data-allteams>Add every team</button>
+            <button class="btn sm gold" data-autoodds ${d.options.length ? '' : 'disabled'}>✨ Auto odds from team ratings</button>` : ''}
           ${d.mode !== 'yesno' ? `<button class="btn sm" data-addopt>${icon('plus', 'ico i-sm')} Add answer</button>` : ''}
           <span class="tiny muted">Odds are American: -150 = favorite, +250 = underdog.</span>
         </div>
@@ -143,6 +145,15 @@ function renderForm(box, ctx) {
     for (const t of ctx.teams) if (!d.options.some((o) => o.teamId === t.id)) d.options.push({ label: t.name, odds: '+1000', teamId: t.id });
     d.options = d.options.filter((o) => o.label || o.teamId);
     draw();
+  });
+  box.querySelector('[data-autoodds]')?.addEventListener('click', () => {
+    sync();
+    const withTeams = d.options.filter((o) => o.teamId);
+    const odds = teamPickOdds(withTeams.map((o) => o.teamId), powerRatings(ctx.season));
+    withTeams.forEach((o, i) => { o.odds = fmtOdds(odds[i]); });
+    d.options.sort((a, b) => Number(String(a.odds).replace('+', '')) - Number(String(b.odds).replace('+', '')));
+    draw();
+    toast('Odds set from team power ratings (favorites first). Tweak anything you like.');
   });
   box.querySelector('[data-cancel]').onclick = ctx.close;
   box.querySelector('[data-save]').onclick = async (e) => {
