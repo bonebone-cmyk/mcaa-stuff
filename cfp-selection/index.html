@@ -1,0 +1,707 @@
+<title>Playoff Selection Show</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Big+Shoulders+Display:wght@700;900&display=swap">
+<style>
+/* Layout: a fixed 1600x900 broadcast stage, scaled to fit, with a mirrored 12-team bracket and full-stage seed reveals on top. */
+:root {
+  color-scheme: dark;
+  --page: #040914;
+  --night: #081226;
+  --deep: #0e1c3a;
+  --chip: #13254b;
+  --line: #2b416e;
+  --chalk: #eef1f7;
+  --muted: #8a9bc0;
+  --gold: #e0bb62;
+  --gold-deep: #9c7425;
+  --plate: #f6f4ef;
+  --display: "Big Shoulders Display", "Oswald", "Arial Narrow", Impact, sans-serif;
+  --cond: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --body: "Barlow", "Segoe UI", system-ui, sans-serif;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body {
+  background: var(--page);
+  color: var(--chalk);
+  font-family: var(--body);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* ---------- stage frame ---------- */
+.frame { position: relative; width: 100%; max-width: 1600px; }
+.stage {
+  position: absolute; left: 0; top: 0;
+  width: 1600px; height: 900px;
+  transform-origin: 0 0;
+  overflow: hidden;
+  border-radius: 10px;
+  background:
+    radial-gradient(1100px 520px at 50% -12%, rgba(86, 128, 222, .34), transparent 62%),
+    radial-gradient(760px 420px at 50% 112%, rgba(224, 187, 98, .12), transparent 70%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0 2px, transparent 2px 128px),
+    linear-gradient(180deg, #0b1833, var(--night) 55%, #050c1c);
+  box-shadow: 0 30px 80px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.05);
+  font-family: var(--body);
+  user-select: none;
+}
+.stage::before, .stage::after {
+  content: ""; position: absolute; top: -200px; width: 700px; height: 1300px; pointer-events: none;
+  background: linear-gradient(180deg, rgba(170, 200, 255, .10), transparent 70%);
+  filter: blur(18px);
+}
+.stage::before { left: -120px; transform: rotate(-24deg); }
+.stage::after { right: -120px; transform: rotate(24deg); }
+
+/* ---------- bracket chrome ---------- */
+.hdr { position: absolute; left: 0; right: 0; top: 34px; text-align: center; z-index: 2; }
+.hdr .eyebrow { font: 700 20px/1 var(--cond); letter-spacing: .34em; text-transform: uppercase; color: var(--gold); }
+.hdr h1 { margin: 10px 0 0; font: 900 64px/0.9 var(--display); letter-spacing: .02em; text-transform: uppercase; color: var(--chalk); }
+.corner { position: absolute; top: 40px; z-index: 2; }
+.corner.l { left: 40px; }
+.corner.r { right: 40px; text-align: right; }
+.corner .k { font: 700 16px/1 var(--cond); letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+.corner .v { font: 900 50px/1 var(--display); color: var(--chalk); margin-top: 8px; font-variant-numeric: tabular-nums; }
+.corner .v small { font-size: 28px; color: var(--muted); }
+.corner .sub { font: 500 17px/1.3 var(--cond); color: var(--muted); margin-top: 6px; letter-spacing: .04em; }
+.pips { display: flex; gap: 6px; justify-content: flex-end; margin-top: 10px; }
+.pip { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--line); background: transparent; box-sizing: border-box; }
+.pip.on { background: var(--c1); border-color: var(--c1); box-shadow: 0 0 10px var(--c1); }
+
+.colhead { position: absolute; z-index: 2; font: 700 17px/1 var(--cond); letter-spacing: .26em; text-transform: uppercase; color: var(--muted); text-align: center; }
+.colhead.final { color: var(--gold); }
+
+.wires { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.wires path { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.wires .dim path { stroke: #2d4473; }
+.wires .lit path { stroke: var(--gold); stroke-width: 2.5; filter: drop-shadow(0 0 6px rgba(224,187,98,.8)); }
+
+.slot {
+  position: absolute; z-index: 2; height: 54px; box-sizing: border-box;
+  display: flex; align-items: center; gap: 10px; padding-right: 10px;
+  background: var(--deep); border: 1px solid var(--line); border-radius: 4px; overflow: hidden;
+}
+.slot .seed {
+  width: 36px; align-self: stretch; flex: none; display: grid; place-items: center;
+  font: 700 23px/1 var(--cond); color: var(--muted); background: var(--chip); border-right: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+.slot .plate { width: 40px; height: 40px; flex: none; border: 2px dashed var(--line); background: transparent; box-sizing: border-box; }
+.slot .name { min-width: 0; font: 600 18px/1.02 var(--cond); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.slot.filled {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c1) 36%, var(--deep)) 0%, var(--deep) 78%);
+  border-color: color-mix(in srgb, var(--c1) 60%, var(--line));
+}
+.slot.filled .seed { background: var(--c1); color: var(--ink); border-right-color: transparent; }
+.slot.filled .plate { background: var(--plate); border: 2px solid var(--ring); }
+.slot.filled .name { color: var(--chalk); }
+.slot.tbd { padding-left: 14px; border-style: dashed; background: rgba(14, 28, 58, .55); }
+.slot.tbd .name { font: 500 15px/1.1 var(--cond); letter-spacing: .08em; color: #6577a0; }
+.slot.fin { border: 1px solid rgba(224,187,98,.55); background: linear-gradient(180deg, rgba(224,187,98,.10), rgba(14,28,58,.7)); }
+.slot.fin .name { color: #b99d5f; }
+
+.plate { border-radius: 50%; display: grid; place-items: center; overflow: hidden; }
+.plate img { width: 74%; height: 74%; object-fit: contain; display: block; }
+.plate img.px { image-rendering: pixelated; }
+
+.trophy { position: absolute; left: 740px; top: 222px; width: 120px; z-index: 2; }
+.trophy-glow { position: absolute; left: 650px; top: 200px; width: 300px; height: 240px; z-index: 1;
+  background: radial-gradient(closest-side, rgba(224,187,98,.28), transparent); }
+
+.foot { position: absolute; bottom: 34px; z-index: 2; font: 500 17px/1 var(--cond); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.foot.l { left: 40px; }
+.foot.r { right: 40px; }
+.foot b { color: var(--gold); font-weight: 700; }
+
+/* ---------- reveal overlay ---------- */
+.rv { position: absolute; inset: 0; z-index: 10; overflow: hidden; }
+.rv-back { position: absolute; inset: 0; background: rgba(4, 9, 20, .88); backdrop-filter: blur(6px); }
+.rv-band {
+  position: absolute; top: -60px; bottom: -60px; left: -260px; width: 1100px;
+  background: linear-gradient(165deg, color-mix(in srgb, var(--c1) 88%, #fff), var(--c1) 40%, color-mix(in srgb, var(--c1) 62%, #000));
+  transform: skewX(-12deg);
+  box-shadow: 30px 0 80px rgba(0,0,0,.45);
+}
+.rv-stripe { position: absolute; top: -60px; bottom: -60px; left: 852px; width: 22px; background: var(--c2); transform: skewX(-12deg); }
+.rv-ghost {
+  position: absolute; left: 40px; top: 50%; margin-top: -390px; height: 780px;
+  font: 900 760px/780px var(--display); letter-spacing: -.02em;
+  color: rgba(0,0,0,.16); -webkit-text-stroke: 3px rgba(255,255,255,.22);
+  white-space: nowrap;
+}
+.rv-rays {
+  position: absolute; left: -30px; top: 0; width: 900px; height: 900px; border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, rgba(255,255,255,.16) 0deg 5deg, transparent 5deg 15deg);
+  -webkit-mask: radial-gradient(circle, #000 18%, transparent 66%);
+          mask: radial-gradient(circle, #000 18%, transparent 66%);
+  animation: spin 50s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.bigplate {
+  position: absolute; width: 400px; height: 400px; box-sizing: border-box;
+  background: radial-gradient(circle at 35% 30%, #ffffff, var(--plate) 60%, #e3dfd6);
+  border: 10px solid var(--ring);
+  box-shadow: 0 30px 80px rgba(0,0,0,.55), 0 0 0 8px rgba(255,255,255,.10);
+}
+.rv-plate { left: 220px; top: 250px; }
+.rv-text { position: absolute; left: 990px; top: 0; bottom: 0; width: 570px; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 24px; }
+.rv-chip { font: 700 30px/1 var(--cond); letter-spacing: .16em; text-transform: uppercase; padding: 10px 16px 9px; background: var(--c1); color: var(--ink); border-radius: 3px; box-shadow: 0 0 0 2px rgba(255,255,255,.15); }
+.rv-name { margin: 0; font: 900 124px/.86 var(--display); text-transform: uppercase; letter-spacing: .005em; color: var(--chalk); text-wrap: balance; text-shadow: 0 6px 30px rgba(0,0,0,.5); }
+.rv-name.long { font-size: 104px; }
+.rv-detail { font: 500 27px/1.3 var(--body); color: #c6d0e6; max-width: 540px; text-wrap: pretty; }
+.rv-detail b { color: var(--chalk); font-weight: 600; }
+.rv-stamp { font: 700 30px/1 var(--cond); letter-spacing: .2em; text-transform: uppercase; color: var(--gold); border: 3px solid var(--gold); padding: 10px 16px 8px; transform: rotate(-4deg); box-shadow: 0 0 24px rgba(224,187,98,.35), inset 0 0 18px rgba(224,187,98,.2); }
+
+/* ---------- cards: intro, interstitial, finale ---------- */
+.card { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; text-align: center; }
+.card .scrim { position: absolute; inset: 0; background: rgba(4, 9, 20, .84); backdrop-filter: blur(5px); }
+.card .inner { position: relative; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.card .kick { display: flex; align-items: center; gap: 22px; font: 700 28px/1 var(--cond); letter-spacing: .34em; text-transform: uppercase; color: var(--gold); }
+.card .kick::before, .card .kick::after { content: ""; width: 90px; height: 2px; background: linear-gradient(90deg, transparent, var(--gold)); }
+.card .kick::after { transform: scaleX(-1); }
+.card .big { margin: 0; font: 900 150px/.86 var(--display); text-transform: uppercase; color: var(--chalk); }
+.card .big.gold {
+  background: linear-gradient(180deg, #fff3cf 0%, var(--gold) 48%, var(--gold-deep) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 8px 30px rgba(224,187,98,.35));
+}
+.card .line2 { font: 500 30px/1.3 var(--body); color: #c6d0e6; }
+.intro { background:
+  radial-gradient(900px 500px at 50% 40%, rgba(86,128,222,.30), transparent 65%),
+  linear-gradient(180deg, #0b1833, #040914); }
+.intro .big { font-size: 230px; }
+
+.fly { position: absolute; z-index: 30; transform-origin: 0 0; pointer-events: none; }
+.confetti { position: absolute; inset: 0; z-index: 40; pointer-events: none; }
+
+/* ---------- controls ---------- */
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; }
+.controls button {
+  font: 600 15px/1 var(--cond); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--chalk); background: var(--deep); border: 1px solid var(--line); border-radius: 999px;
+  padding: 11px 18px; cursor: pointer;
+}
+.controls button:hover { border-color: var(--gold); }
+.controls button:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.controls button.primary { background: var(--gold); color: #1d1404; border-color: var(--gold); }
+.speed { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.speed button { border: 0; border-radius: 0; background: transparent; padding: 11px 14px; }
+.speed button[aria-pressed="true"] { background: var(--chip); color: var(--gold); }
+.hint { font: 500 14px/1.4 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-align: center; }
+@media (min-width: 700px), (orientation: landscape) { .hint { display: none; } }
+</style>
+
+<div class="frame" id="frame">
+  <div class="stage" id="stage" aria-label="College Football Playoff selection show">
+    <div class="corner l">
+      <div class="k">Field of 12</div>
+      <div class="sub">4 byes · 4 first-round games</div>
+    </div>
+    <div class="hdr">
+      <div class="eyebrow">2026 Selection Day</div>
+      <h1>College Football Playoff</h1>
+    </div>
+    <div class="corner r">
+      <div class="k" id="countLabel">Seeds revealed</div>
+      <div class="v"><span id="count">00</span><small> / 12</small></div>
+      <div class="pips" id="pips"></div>
+    </div>
+
+    <div class="trophy-glow"></div>
+    <svg class="trophy" viewBox="0 0 120 170" aria-hidden="true">
+      <defs>
+        <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#fff1c4"/><stop offset=".45" stop-color="#e0bb62"/><stop offset="1" stop-color="#8f6a20"/>
+        </linearGradient>
+      </defs>
+      <path d="M24 24 C4 24 4 58 32 64" fill="none" stroke="url(#g)" stroke-width="6"/>
+      <path d="M96 24 C116 24 116 58 88 64" fill="none" stroke="url(#g)" stroke-width="6"/>
+      <path d="M20 10 H100 C100 60 86 86 60 94 C34 86 20 60 20 10 Z" fill="url(#g)"/>
+      <ellipse cx="60" cy="42" rx="17" ry="10" fill="#6a4512"/>
+      <path d="M52 42 H68 M55 39 V45 M60 39 V45 M65 39 V45" stroke="#fff3d6" stroke-width="1.6"/>
+      <rect x="54" y="93" width="12" height="28" fill="url(#g)"/>
+      <path d="M36 121 H84 L92 148 H28 Z" fill="url(#g)"/>
+      <rect x="22" y="148" width="76" height="16" rx="2" fill="#7a5a1c"/>
+    </svg>
+
+    <svg class="wires" viewBox="0 0 1600 900" aria-hidden="true">
+      <g class="dim" id="wiresDim"></g>
+      <g class="lit" id="wiresLit"></g>
+    </svg>
+    <div id="bracket"></div>
+
+    <div class="foot l">Seeds <b>1–4</b> earn first-round byes</div>
+    <div class="foot r">Higher seed hosts the first round</div>
+
+    <!-- seed reveal -->
+    <div class="rv" id="rv" hidden>
+      <div class="rv-back" id="rvBack"></div>
+      <div class="rv-band" id="rvBand"></div>
+      <div class="rv-stripe" id="rvStripe"></div>
+      <div class="rv-ghost" id="rvGhost">12</div>
+      <div class="rv-rays" id="rvRays"></div>
+      <div class="plate bigplate rv-plate" id="rvPlate"><img id="rvImg" alt=""></div>
+      <div class="rv-text" id="rvText">
+        <div class="rv-chip" id="rvChip">No. 12 Seed</div>
+        <h2 class="rv-name" id="rvName">Team</h2>
+        <div class="rv-detail" id="rvDetail"></div>
+        <div class="rv-stamp" id="rvStamp" hidden>First-Round Bye</div>
+      </div>
+    </div>
+
+    <!-- interstitial -->
+    <div class="card" id="inter" hidden>
+      <div class="scrim"></div>
+      <div class="inner">
+        <div class="kick" id="interKick"></div>
+        <div class="big" id="interBig"></div>
+        <div class="line2" id="interSub"></div>
+      </div>
+    </div>
+
+    <!-- finale -->
+    <div class="card" id="finale" hidden>
+      <div class="scrim" style="background: rgba(4,9,20,.6)"></div>
+      <div class="inner">
+        <div class="kick">2026 College Football Playoff</div>
+        <div class="big gold">The Field Is Set</div>
+      </div>
+    </div>
+
+    <!-- intro -->
+    <div class="card intro" id="intro">
+      <div class="inner">
+        <div class="kick" id="introKick">College Football Playoff</div>
+        <div class="big gold" id="introBig">Selection Day</div>
+        <div class="line2" id="introSub">The 12-team field, revealed from No. 12 to No. 1</div>
+      </div>
+    </div>
+
+    <canvas class="confetti" id="confetti" width="1600" height="900"></canvas>
+  </div>
+</div>
+
+<div class="controls" role="group" aria-label="Playback">
+  <button id="btnPlay" class="primary" type="button">Pause</button>
+  <button id="btnReplay" type="button">Replay</button>
+  <button id="btnSkip" type="button">Skip to bracket</button>
+  <span class="speed" role="group" aria-label="Speed">
+    <button id="sp1" type="button" aria-pressed="true">1×</button>
+    <button id="sp2" type="button" aria-pressed="false">2×</button>
+  </span>
+</div>
+<div class="hint">Turn your phone sideways for the full broadcast</div>
+
+<script>
+(() => {
+  const TEAMS = {
+    1:  { name: "Fresno State Wolves", logo: "logos/01-fresno-state.webp",     c1: "#c8102e", c2: "#13284c", ink: "#ffffff", ring: "#13284c" },
+    2:  { name: "Squid State",         logo: "logos/02-squid-state.webp",      c1: "#1414a8", c2: "#7d8cff", ink: "#ffffff", ring: "#0b0b8f" },
+    3:  { name: "Air Force",           logo: "logos/03-air-force.webp",        c1: "#45a9d6", c2: "#9aa7b6", ink: "#06202d", ring: "#2f8fb8" },
+    4:  { name: "Sheep State",         logo: "logos/04-sheep-state.webp",      c1: "#f08cb0", c2: "#c9cbd1", ink: "#3a0c1e", ring: "#e07aa0" },
+    5:  { name: "Witch Forest",        logo: "logos/05-witch-forest.webp",     c1: "#4a2178", c2: "#32d36f", ink: "#ffffff", ring: "#33185a" },
+    6:  { name: "Buzz Bee University", logo: "logos/06-buzz-bee.webp",         c1: "#e6db4e", c2: "#111111", ink: "#151200", ring: "#111111" },
+    7:  { name: "Purple Wool State",   logo: "logos/07-purple-wool-state.webp",c1: "#a400ff", c2: "#e2b2ff", ink: "#ffffff", ring: "#8a00d6" },
+    8:  { name: "Creeper State",       logo: "logos/08-creeper-state.webp",    c1: "#3faa46", c2: "#163f1a", ink: "#ffffff", ring: "#2a7d30", px: true },
+    9:  { name: "Arkansas Razorhogs",  logo: "logos/09-arkansas.webp",         c1: "#9d2235", c2: "#f4f4f4", ink: "#ffffff", ring: "#9d2235" },
+    10: { name: "Piglin State",        logo: "logos/10-piglin-state.webp",     c1: "#c79b3d", c2: "#5b1515", ink: "#2a0909", ring: "#5b1515" },
+    11: { name: "Enderman State",      logo: "logos/11-enderman-state.webp",   c1: "#c25cf4", c2: "#141016", ink: "#1b0322", ring: "#141016" },
+    12: { name: "Panderblit",          logo: "logos/12-panderblit.webp",       c1: "#e9e9e6", c2: "#161616", ink: "#141414", ring: "#161616", px: true },
+  };
+  const BYE_OPP = { 1: [8, 9], 2: [7, 10], 3: [6, 11], 4: [5, 12] };
+
+  // ---------- bracket geometry (stage px) ----------
+  const W = 230, WSF = 150, WF = 180, H = 54;
+  const X = { LR1: 16, LQF: 274, LSF: 532, FIN: 710, RSF: 918, RQF: 1096, RR1: 1354 };
+  const TOP = 335, BOT = 665, MID = 500;
+  const GAMES = [
+    { x: X.LR1, w: W, c: TOP, slots: [8, 9] },
+    { x: X.LR1, w: W, c: BOT, slots: [5, 12] },
+    { x: X.RR1, w: W, c: TOP, slots: [7, 10] },
+    { x: X.RR1, w: W, c: BOT, slots: [6, 11] },
+    { x: X.LQF, w: W, c: TOP, slots: [1, "Winner · 8 vs 9"] },
+    { x: X.LQF, w: W, c: BOT, slots: [4, "Winner · 5 vs 12"] },
+    { x: X.RQF, w: W, c: TOP, slots: [2, "Winner · 7 vs 10"] },
+    { x: X.RQF, w: W, c: BOT, slots: [3, "Winner · 6 vs 11"] },
+    { x: X.LSF, w: WSF, c: MID, slots: ["Quarterfinal winner", "Quarterfinal winner"] },
+    { x: X.RSF, w: WSF, c: MID, slots: ["Quarterfinal winner", "Quarterfinal winner"] },
+    { x: X.FIN, w: WF, c: MID, slots: ["Semifinal winner", "Semifinal winner"], fin: true },
+  ];
+  const HEADS = [
+    ["First Round", X.LR1, W], ["Quarterfinals", X.LQF, W], ["Semifinals", X.LSF, WSF],
+    ["Semifinals", X.RSF, WSF], ["Quarterfinals", X.RQF, W], ["First Round", X.RR1, W],
+  ];
+  const wire = (x1, y1, x2, y2) => { const m = (x1 + x2) / 2; return `M${x1} ${y1} H${m} V${y2} H${x2}`; };
+  const WIRES = [
+    wire(X.LR1 + W, TOP, X.LQF, TOP + 30), wire(X.LR1 + W, BOT, X.LQF, BOT + 30),
+    wire(X.RR1, TOP, X.RQF + W, TOP + 30), wire(X.RR1, BOT, X.RQF + W, BOT + 30),
+    wire(X.LQF + W, TOP, X.LSF, MID - 30), wire(X.LQF + W, BOT, X.LSF, MID + 30),
+    wire(X.RQF, TOP, X.RSF + WSF, MID - 30), wire(X.RQF, BOT, X.RSF + WSF, MID + 30),
+    wire(X.LSF + WSF, MID, X.FIN, MID - 30), wire(X.RSF, MID, X.FIN + WF, MID + 30),
+  ];
+
+  const $ = id => document.getElementById(id);
+  const stage = $("stage"), frame = $("frame"), bracket = $("bracket");
+  const slotEls = {};
+
+  for (const [label, x, w] of HEADS) {
+    const h = document.createElement("div");
+    h.className = "colhead"; h.textContent = label;
+    Object.assign(h.style, { left: x + "px", width: w + "px", top: "228px" });
+    bracket.appendChild(h);
+  }
+  const fh = document.createElement("div");
+  fh.className = "colhead final"; fh.textContent = "National Championship";
+  Object.assign(fh.style, { left: (X.FIN - 40) + "px", width: (WF + 80) + "px", top: (MID - 57 - 34) + "px" });
+  bracket.appendChild(fh);
+
+  for (const g of GAMES) {
+    g.slots.forEach((s, i) => {
+      const el = document.createElement("div");
+      const top = g.c - 57 + i * (H + 6);
+      Object.assign(el.style, { left: g.x + "px", top: top + "px", width: g.w + "px" });
+      if (typeof s === "number") {
+        el.className = "slot";
+        el.innerHTML = `<span class="seed">${s}</span><span class="plate"></span><span class="name">No. ${s} seed</span>`;
+        slotEls[s] = el;
+      } else {
+        el.className = "slot tbd" + (g.fin ? " fin" : "");
+        el.innerHTML = `<span class="name"></span>`;
+        el.querySelector(".name").textContent = s;
+      }
+      bracket.appendChild(el);
+    });
+  }
+
+  const NS = "http://www.w3.org/2000/svg";
+  const dimPaths = [], litPaths = [];
+  for (const d of WIRES) {
+    for (const [grp, arr] of [[$("wiresDim"), dimPaths], [$("wiresLit"), litPaths]]) {
+      const p = document.createElementNS(NS, "path");
+      p.setAttribute("d", d); grp.appendChild(p); arr.push(p);
+    }
+  }
+  const setDash = (paths, hidden) => paths.forEach(p => {
+    const L = p.getTotalLength(); p.style.strokeDasharray = L; p.style.strokeDashoffset = hidden ? L : 0;
+  });
+
+  const pips = $("pips");
+  for (let s = 1; s <= 12; s++) {
+    const p = document.createElement("span");
+    p.className = "pip"; p.dataset.seed = s; pips.appendChild(p);
+  }
+
+  // ---------- scaling ----------
+  function fit() {
+    const w = frame.clientWidth;
+    const avail = window.innerHeight - 110;
+    const s = Math.max(0.1, Math.min(w / 1600, avail / 900));
+    stage.style.transform = `scale(${s})`;
+    stage.style.left = Math.max(0, (w - 1600 * s) / 2) + "px";
+    frame.style.height = 900 * s + "px";
+  }
+  new ResizeObserver(fit).observe(frame);
+  window.addEventListener("resize", fit);
+  fit();
+  const stageScale = () => stage.getBoundingClientRect().width / 1600;
+
+  // ---------- clock: pause, speed, abort ----------
+  let speed = 1, paused = false, token = 0, done = false;
+  const live = new Set(), all = [];
+  const ABORT = Symbol("abort");
+  function A(el, kf, opts) {
+    const a = el.animate(kf, Object.assign({ fill: "both", easing: "cubic-bezier(.2,.8,.2,1)" }, opts));
+    a.playbackRate = speed;
+    if (paused) a.pause();
+    live.add(a); all.push(a);
+    a.finished.then(() => live.delete(a), () => live.delete(a));
+    return a;
+  }
+  function wait(ms) {
+    const tok = token;
+    return new Promise((res, rej) => {
+      let left = ms, last = performance.now();
+      const tick = now => {
+        if (tok !== token) return rej(ABORT);
+        if (!paused) left -= (now - last) * speed;
+        last = now;
+        left <= 0 ? res() : requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+  function cancelAll() { all.forEach(a => a.cancel()); all.length = 0; live.clear(); }
+
+  // ---------- confetti ----------
+  const cv = $("confetti"), cx = cv.getContext("2d");
+  let parts = [], running = false, lastT = 0;
+  function burst(x, y, colors, n, power = 1) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, v = (4 + Math.random() * 9) * power;
+      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 5 * power, r: Math.random() * 6.28,
+        vr: (Math.random() - .5) * .4, w: 7 + Math.random() * 8, h: 4 + Math.random() * 6,
+        c: colors[i % colors.length], life: 1 });
+    }
+    spin();
+  }
+  function rain(colors, n) {
+    for (let i = 0; i < n; i++) {
+      parts.push({ x: Math.random() * 1600, y: -20 - Math.random() * 700, vx: (Math.random() - .5) * 2, vy: 2 + Math.random() * 3,
+        r: Math.random() * 6.28, vr: (Math.random() - .5) * .3, w: 8 + Math.random() * 8, h: 4 + Math.random() * 6,
+        c: colors[i % colors.length], life: 1, slow: true });
+    }
+    spin();
+  }
+  function spin() { if (!running) { running = true; lastT = performance.now(); requestAnimationFrame(step); } }
+  function step(now) {
+    const dt = Math.min(40, now - lastT) / 16.67 * (paused ? 0 : speed); lastT = now;
+    cx.clearRect(0, 0, 1600, 900);
+    parts = parts.filter(p => p.y < 960 && p.life > 0);
+    for (const p of parts) {
+      p.vy += (p.slow ? .05 : .32) * dt; p.vx *= Math.pow(.985, dt);
+      p.x += p.vx * dt; p.y += p.vy * dt; p.r += p.vr * dt;
+      if (!p.slow) p.life -= .006 * dt;
+      cx.save(); cx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.4));
+      cx.translate(p.x, p.y); cx.rotate(p.r); cx.scale(1, Math.cos(p.r * 2));
+      cx.fillStyle = p.c; cx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); cx.restore();
+    }
+    if (parts.length) requestAnimationFrame(step); else { running = false; cx.clearRect(0, 0, 1600, 900); }
+  }
+
+  // ---------- state helpers ----------
+  const pad = n => String(n).padStart(2, "0");
+  let revealed = 0;
+  function setCount(n) {
+    revealed = n; $("count").textContent = pad(n);
+    $("countLabel").textContent = n === 12 && done ? "The field is set" : "Seeds revealed";
+  }
+  function logoImg(t) {
+    const img = document.createElement("img");
+    img.src = t.logo; img.alt = t.name; if (t.px) img.className = "px";
+    return img;
+  }
+  function paint(el, t) {
+    el.style.setProperty("--c1", t.c1); el.style.setProperty("--c2", t.c2);
+    el.style.setProperty("--ink", t.ink); el.style.setProperty("--ring", t.ring);
+  }
+  function fillSlot(seed) {
+    const t = TEAMS[seed], el = slotEls[seed];
+    paint(el, t); el.classList.add("filled");
+    const plate = el.querySelector(".plate");
+    plate.replaceChildren(logoImg(t));
+    el.querySelector(".name").textContent = t.name;
+    const pip = pips.children[seed - 1]; pip.style.setProperty("--c1", t.c1); pip.classList.add("on");
+  }
+  function clearSlot(seed) {
+    const el = slotEls[seed];
+    el.classList.remove("filled");
+    el.querySelector(".plate").replaceChildren();
+    el.querySelector(".name").textContent = `No. ${seed} seed`;
+    pips.children[seed - 1].classList.remove("on");
+  }
+  function detailFor(seed) {
+    const opp = 17 - seed;
+    if (seed >= 9) return `Opens the playoff on the road at the <b>No. ${opp} seed</b>`;
+    if (seed >= 5) return `Hosts <b>No. ${opp} ${TEAMS[opp].name}</b> in the first round`;
+    const [a, b] = BYE_OPP[seed];
+    return `Awaits the winner of <b>No. ${a} ${TEAMS[a].name}</b> vs. <b>No. ${b} ${TEAMS[b].name}</b> in the quarterfinals`;
+  }
+
+  // ---------- scenes ----------
+  async function intro() {
+    const el = $("intro"); el.hidden = false;
+    A($("introKick"), [{ opacity: 0, letterSpacing: ".8em" }, { opacity: 1, letterSpacing: ".34em" }], { duration: 900 });
+    A($("introBig"), [{ opacity: 0, transform: "scale(1.25)", filter: "blur(12px)" }, { opacity: 1, transform: "scale(1)", filter: "blur(0)" }], { duration: 1100, delay: 200 });
+    A($("introSub"), [{ opacity: 0, transform: "translateY(16px)" }, { opacity: 1, transform: "none" }], { duration: 700, delay: 800 });
+    await wait(2600);
+    A(el, [{ opacity: 1 }, { opacity: 0 }], { duration: 700 });
+    dimPaths.forEach((p, i) => {
+      const L = p.getTotalLength();
+      A(p, [{ strokeDashoffset: L }, { strokeDashoffset: 0 }], { duration: 900, delay: 300 + i * 60 });
+    });
+    A(bracket, [{ opacity: 0, transform: "translateY(14px)" }, { opacity: 1, transform: "none" }], { duration: 800, delay: 200 });
+    await wait(700); el.hidden = true;
+    await wait(1100);
+  }
+
+  async function card(kick, big, sub, hold = 1300) {
+    const el = $("inter"); el.hidden = false;
+    $("interKick").textContent = kick; $("interBig").textContent = big; $("interSub").textContent = sub;
+    A(el, [{ opacity: 0 }, { opacity: 1 }], { duration: 350 });
+    A($("interBig"), [{ clipPath: "inset(0 50% 0 50%)", letterSpacing: ".12em" }, { clipPath: "inset(0 0 0 0)", letterSpacing: "0em" }], { duration: 700, delay: 100 });
+    A($("interSub"), [{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { duration: 500, delay: 450 });
+    await wait(700 + hold);
+    A(el, [{ opacity: 1 }, { opacity: 0 }], { duration: 400 });
+    await wait(400); el.hidden = true;
+  }
+
+  async function reveal(seed) {
+    const t = TEAMS[seed], rv = $("rv");
+    paint(rv, t);
+    $("rvGhost").textContent = seed;
+    $("rvImg").src = t.logo; $("rvImg").className = t.px ? "px" : "";
+    $("rvChip").textContent = `No. ${seed} Seed`;
+    $("rvName").textContent = t.name;
+    $("rvName").classList.toggle("long", t.name.split(" ").some(w => w.length >= 9));
+    $("rvDetail").innerHTML = detailFor(seed);
+    const stamp = $("rvStamp");
+    stamp.hidden = seed > 4;
+    stamp.textContent = seed === 1 ? "No. 1 Overall · Bye" : "First-Round Bye";
+    rv.hidden = false;
+
+    const sk = "skewX(-12deg)";
+    A($("rvBack"), [{ opacity: 0 }, { opacity: 1 }], { duration: 350, easing: "linear" });
+    A($("rvBand"), [{ transform: `translateX(-120%) ${sk}` }, { transform: `translateX(0) ${sk}` }], { duration: 650, easing: "cubic-bezier(.2,.9,.1,1)" });
+    A($("rvStripe"), [{ transform: `translateX(-1300px) ${sk}` }, { transform: `translateX(0) ${sk}` }], { duration: 700, delay: 60, easing: "cubic-bezier(.2,.9,.1,1)" });
+    A($("rvGhost"), [{ opacity: 0, transform: "translateX(-120px) scale(1.12)" }, { opacity: 1, transform: "none" }], { duration: 1000, delay: 150 });
+    A($("rvRays"), [{ opacity: 0 }, { opacity: 1 }], { duration: 700, delay: 400 });
+    A($("rvPlate"), [
+      { opacity: 0, transform: "scale(.2) rotate(-30deg)" },
+      { opacity: 1, transform: "scale(1.08) rotate(4deg)", offset: .7 },
+      { opacity: 1, transform: "scale(1) rotate(0)" }], { duration: 800, delay: 280, easing: "cubic-bezier(.3,.7,.3,1)" });
+    A($("rvText"), [{ opacity: 1, transform: "none" }, { opacity: 1, transform: "none" }], { duration: 1 });
+    A($("rvChip"), [{ opacity: 0, transform: "translateX(50px)" }, { opacity: 1, transform: "none" }], { duration: 500, delay: 450 });
+    A($("rvName"), [{ clipPath: "inset(-10% 100% -10% 0)", transform: "translateX(40px)" }, { clipPath: "inset(-10% -5% -10% 0)", transform: "none" }], { duration: 700, delay: 560, easing: "cubic-bezier(.2,.9,.1,1)" });
+    A($("rvDetail"), [{ opacity: 0, transform: "translateY(14px)" }, { opacity: 1, transform: "none" }], { duration: 600, delay: 850 });
+    if (seed <= 4) A(stamp, [{ opacity: 0, transform: "scale(2.6) rotate(-4deg)" }, { opacity: 1, transform: "scale(1) rotate(-4deg)" }], { duration: 380, delay: 1250, easing: "cubic-bezier(.3,1.5,.5,1)" });
+
+    await wait(900);
+    burst(420, 450, [t.c1, t.c2, "#ffffff", "#e0bb62"], seed <= 4 ? 110 : 60, seed <= 4 ? 1.15 : .9);
+    let hold = seed <= 4 ? 2500 : 1750;
+    if (seed === 1) {
+      await wait(500);
+      rain([t.c1, t.c2, "#ffffff", "#e0bb62"], 220);
+      hold = 2700;
+    }
+    await wait(hold);
+
+    // exit: plate flies into its bracket slot
+    const s = stageScale(), sr = stage.getBoundingClientRect();
+    const target = slotEls[seed].querySelector(".plate").getBoundingClientRect();
+    const tx = (target.left - sr.left) / s, ty = (target.top - sr.top) / s, k = (target.width / s) / 400;
+    const fly = document.createElement("div");
+    fly.className = "plate bigplate fly"; paint(fly, t);
+    Object.assign(fly.style, { left: "220px", top: "250px" });
+    fly.appendChild(logoImg(t));
+    stage.appendChild(fly);
+    A($("rvPlate"), [{ opacity: 0 }, { opacity: 0 }], { duration: 1 });
+    A($("rvText"), [{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateX(60px)" }], { duration: 350, easing: "ease-in" });
+    A($("rvRays"), [{ opacity: 1 }, { opacity: 0 }], { duration: 300 });
+    A($("rvGhost"), [{ opacity: 1 }, { opacity: 0, transform: "translateX(-80px)" }], { duration: 450, easing: "ease-in" });
+    A($("rvBand"), [{ transform: `translateX(0) ${sk}` }, { transform: `translateX(-125%) ${sk}` }], { duration: 600, delay: 80, easing: "cubic-bezier(.6,0,.4,1)" });
+    A($("rvStripe"), [{ transform: `translateX(0) ${sk}` }, { transform: `translateX(-1400px) ${sk}` }], { duration: 600, delay: 40, easing: "cubic-bezier(.6,0,.4,1)" });
+    A($("rvBack"), [{ opacity: 1 }, { opacity: 0 }], { duration: 550, delay: 200, easing: "linear" });
+    A(fly, [
+      { transform: "translate(0,0) scale(1)" },
+      { transform: `translate(${(tx - 220) * .5}px, ${(ty - 250) * .5 - 60}px) scale(${(1 + k) / 2.2})`, offset: .5 },
+      { transform: `translate(${tx - 220}px, ${ty - 250}px) scale(${k})` }], { duration: 900, easing: "cubic-bezier(.55,0,.25,1)" });
+    await wait(900);
+    fly.remove(); rv.hidden = true;
+    fillSlot(seed); setCount(revealed + 1);
+    const slot = slotEls[seed];
+    A(slot, [{ boxShadow: `0 0 0 2px ${t.c1}, 0 0 46px ${t.c1}` }, { boxShadow: "0 0 0 0 transparent, 0 0 0 transparent" }], { duration: 1100, easing: "ease-out" });
+    A(slot.querySelector(".plate"), [{ transform: "scale(1.5)" }, { transform: "scale(1)" }], { duration: 450, easing: "cubic-bezier(.3,1.6,.5,1)" });
+    A(slot.querySelector(".name"), [{ opacity: 0, transform: "translateX(-10px)" }, { opacity: 1, transform: "none" }], { duration: 400 });
+    const r = slot.getBoundingClientRect();
+    burst((r.left - sr.left) / s + 60, (r.top - sr.top) / s + 27, [t.c1, "#ffffff"], 22, .45);
+    await wait(450);
+  }
+
+  async function finale() {
+    await wait(300);
+    litPaths.forEach((p, i) => {
+      const L = p.getTotalLength();
+      A(p, [{ strokeDashoffset: L }, { strokeDashoffset: 0 }], { duration: 900, delay: (i < 4 ? 0 : i < 8 ? 500 : 1000), easing: "ease-in-out" });
+    });
+    await wait(1700);
+    const el = $("finale"); el.hidden = false;
+    const big = el.querySelector(".big");
+    A(el, [{ opacity: 0 }, { opacity: 1 }], { duration: 400 });
+    A(big, [{ opacity: 0, transform: "scale(1.6)", letterSpacing: ".2em" }, { opacity: 1, transform: "scale(1)", letterSpacing: "0em" }], { duration: 900, easing: "cubic-bezier(.2,.9,.1,1)" });
+    await wait(500);
+    rain(Object.values(TEAMS).flatMap(t => [t.c1]).concat(["#e0bb62", "#ffffff", "#e0bb62"]), 380);
+    await wait(3000);
+    A(el, [{ opacity: 1 }, { opacity: 0 }], { duration: 700 });
+    await wait(700); el.hidden = true;
+    done = true; setCount(12);
+  }
+
+  function resetView() {
+    token++; cancelAll(); parts = [];
+    ["rv", "inter", "finale"].forEach(id => $(id).hidden = true);
+    stage.querySelectorAll(".fly").forEach(f => f.remove());
+    for (let s = 1; s <= 12; s++) clearSlot(s);
+    done = false; setCount(0);
+  }
+
+  async function play() {
+    resetView();
+    setPaused(false);
+    setDash(dimPaths, true); setDash(litPaths, true);
+    $("intro").hidden = false;
+    try {
+      await intro();
+      await card("Revealing the field", "No. 12 to No. 1", "Each team drops into its spot in the bracket");
+      for (let s = 12; s >= 1; s--) {
+        if (s === 4) await card("The top four", "First-Round Byes", "Seeds 1 through 4 go straight to the quarterfinals", 1500);
+        await reveal(s);
+      }
+      await finale();
+      $("btnPlay").textContent = "Play again";
+    } catch (e) { if (e !== ABORT) throw e; }
+  }
+
+  function showFinal() {
+    resetView();
+    $("intro").hidden = true;
+    for (let s = 1; s <= 12; s++) fillSlot(s);
+    setDash(dimPaths, false); setDash(litPaths, false);
+    done = true; setCount(12);
+    setPaused(false);
+  }
+
+  function setPaused(p) {
+    paused = p;
+    live.forEach(a => p ? a.pause() : a.play());
+    $("btnPlay").textContent = p ? "Play" : (done ? "Play again" : "Pause");
+  }
+  function setSpeed(v) {
+    speed = v;
+    live.forEach(a => a.playbackRate = v);
+    $("sp1").setAttribute("aria-pressed", v === 1); $("sp2").setAttribute("aria-pressed", v === 2);
+  }
+
+  $("btnPlay").addEventListener("click", () => {
+    if (done && !paused) { play(); return; }
+    setPaused(!paused);
+  });
+  $("btnReplay").addEventListener("click", play);
+  $("btnSkip").addEventListener("click", showFinal);
+  $("sp1").addEventListener("click", () => setSpeed(1));
+  $("sp2").addEventListener("click", () => setSpeed(2));
+  document.addEventListener("keydown", e => {
+    if (e.code === "Space" && e.target === document.body) { e.preventDefault(); $("btnPlay").click(); }
+  });
+
+  // preload logos so reveals never pop in late
+  Object.values(TEAMS).forEach(t => { const i = new Image(); i.src = t.logo; });
+
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    showFinal();
+    $("btnPlay").textContent = "Play show";
+  } else {
+    play();
+  }
+})();
+</script>
