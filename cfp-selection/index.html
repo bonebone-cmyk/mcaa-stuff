@@ -225,7 +225,7 @@ body {
       <div class="sub">4 byes · 4 first-round games</div>
     </div>
     <div class="hdr">
-      <div class="eyebrow">2026 Selection Day</div>
+      <div class="eyebrow">MCAA CHP2 S1 · Selection Day</div>
       <h1>College Football Playoff</h1>
     </div>
     <div class="corner r">
@@ -290,7 +290,7 @@ body {
     <div class="card" id="finale" hidden>
       <div class="scrim" style="background: rgba(4,9,20,.6)"></div>
       <div class="inner">
-        <div class="kick">2026 College Football Playoff</div>
+        <div class="kick">MCAA CHP2 S1 Playoff</div>
         <div class="big gold">The Field Is Set</div>
       </div>
     </div>
@@ -298,9 +298,9 @@ body {
     <!-- intro -->
     <div class="card intro" id="intro">
       <div class="inner">
-        <div class="kick" id="introKick">College Football Playoff</div>
+        <div class="kick" id="introKick">MCAA CHP2 S1 · College Football Playoff</div>
         <div class="big gold" id="introBig">Selection Day</div>
-        <div class="line2" id="introSub">The 12-team field, revealed from No. 12 to No. 1</div>
+        <div class="line2" id="introSub">The 12-team field, revealed from No. 1 to No. 12</div>
       </div>
     </div>
 
@@ -319,18 +319,18 @@ body {
 <script>
 (() => {
   const TEAMS = {
-    1:  { name: "Fresno State Wolves", logo: "logos/01-fresno-state.webp",     c1: "#c8102e", c2: "#13284c", ink: "#ffffff", ring: "#13284c" },
-    2:  { name: "Squid State",         logo: "logos/02-squid-state.webp",      c1: "#1414a8", c2: "#7d8cff", ink: "#ffffff", ring: "#0b0b8f" },
-    3:  { name: "Air Force",           logo: "logos/03-air-force.webp",        c1: "#45a9d6", c2: "#9aa7b6", ink: "#06202d", ring: "#2f8fb8" },
-    4:  { name: "Sheep State",         logo: "logos/04-sheep-state.webp",      c1: "#f08cb0", c2: "#c9cbd1", ink: "#3a0c1e", ring: "#e07aa0" },
-    5:  { name: "Witch Forest",        logo: "logos/05-witch-forest.webp",     c1: "#4a2178", c2: "#32d36f", ink: "#ffffff", ring: "#33185a" },
-    6:  { name: "Buzz Bee University", logo: "logos/06-buzz-bee.webp",         c1: "#e6db4e", c2: "#111111", ink: "#151200", ring: "#111111" },
-    7:  { name: "Purple Wool State",   logo: "logos/07-purple-wool-state.webp",c1: "#a400ff", c2: "#e2b2ff", ink: "#ffffff", ring: "#8a00d6" },
-    8:  { name: "Creeper State",       logo: "logos/08-creeper-state.webp",    c1: "#3faa46", c2: "#163f1a", ink: "#ffffff", ring: "#2a7d30", px: true },
-    9:  { name: "Arkansas Razorhogs",  logo: "logos/09-arkansas.webp",         c1: "#9d2235", c2: "#f4f4f4", ink: "#ffffff", ring: "#9d2235" },
-    10: { name: "Piglin State",        logo: "logos/10-piglin-state.webp",     c1: "#c79b3d", c2: "#5b1515", ink: "#2a0909", ring: "#5b1515" },
-    11: { name: "Enderman State",      logo: "logos/11-enderman-state.webp",   c1: "#c25cf4", c2: "#141016", ink: "#1b0322", ring: "#141016" },
-    12: { name: "Panderblit",          logo: "logos/12-panderblit.webp",       c1: "#e9e9e6", c2: "#161616", ink: "#141414", ring: "#161616", px: true },
+    1:  { name: "Fresno State Wolves", logo: "logos/fresno-state.webp",      c1: "#c8102e", c2: "#13284c", ink: "#ffffff", ring: "#13284c" },
+    2:  { name: "Squid State",         logo: "logos/squid-state.webp",       c1: "#1414a8", c2: "#7d8cff", ink: "#ffffff", ring: "#0b0b8f" },
+    3:  { name: "Sheep State",         logo: "logos/sheep-state.webp",       c1: "#f08cb0", c2: "#c9cbd1", ink: "#3a0c1e", ring: "#e07aa0" },
+    4:  { name: "Witch Forrest",       logo: "logos/witch-forest.webp",      c1: "#4a2178", c2: "#32d36f", ink: "#ffffff", ring: "#33185a" },
+    5:  { name: "Air Force Vexes",     logo: "logos/air-force.webp",         c1: "#45a9d6", c2: "#9aa7b6", ink: "#06202d", ring: "#2f8fb8" },
+    6:  { name: "Buzz Bee State",      logo: "logos/buzz-bee.webp",          c1: "#e6db4e", c2: "#111111", ink: "#151200", ring: "#111111" },
+    7:  { name: "Purple Wool State",   logo: "logos/purple-wool-state.webp", c1: "#a400ff", c2: "#e2b2ff", ink: "#ffffff", ring: "#8a00d6" },
+    8:  { name: "Creeper State",       logo: "logos/creeper-state.webp",     c1: "#3faa46", c2: "#163f1a", ink: "#ffffff", ring: "#2a7d30", px: true },
+    9:  { name: "Arkansas Razorhogs",  logo: "logos/arkansas.webp",          c1: "#9d2235", c2: "#f4f4f4", ink: "#ffffff", ring: "#9d2235" },
+    10: { name: "Piglin State",        logo: "logos/piglin-state.webp",      c1: "#c79b3d", c2: "#5b1515", ink: "#2a0909", ring: "#5b1515" },
+    11: { name: "Panderbilt",          logo: "logos/panderbilt.webp",        c1: "#e9e9e6", c2: "#161616", ink: "#141414", ring: "#161616", px: true },
+    12: { name: "Kentucky Cats",       logo: "logos/kentucky-cats.webp",     c1: "#3b3d44", c2: "#f2f2f2", ink: "#ffffff", ring: "#111111" },
   };
   const BYE_OPP = { 1: [8, 9], 2: [7, 10], 3: [6, 11], 4: [5, 12] };
 
@@ -547,10 +547,13 @@ body {
   }
   function detailFor(seed) {
     const opp = 17 - seed;
-    if (seed >= 9) return `Opens the playoff on the road at the <b>No. ${opp} seed</b>`;
-    if (seed >= 5) return `Hosts <b>No. ${opp} ${TEAMS[opp].name}</b> in the first round`;
-    const [a, b] = BYE_OPP[seed];
-    return `Awaits the winner of <b>No. ${a} ${TEAMS[a].name}</b> vs. <b>No. ${b} ${TEAMS[b].name}</b> in the quarterfinals`;
+    const bye = { 8: 1, 9: 1, 7: 2, 10: 2, 6: 3, 11: 3, 5: 4, 12: 4 }[seed];
+    if (seed <= 4) {
+      const [a, b] = BYE_OPP[seed];
+      return `Skips the first round and awaits the <b>No. ${a} vs. No. ${b}</b> winner in the quarterfinals`;
+    }
+    if (seed <= 8) return `Hosts the <b>No. ${opp} seed</b> in the first round. The winner meets <b>No. ${bye} ${TEAMS[bye].name}</b>`;
+    return `Travels to <b>No. ${opp} ${TEAMS[opp].name}</b> in the first round. The winner meets <b>No. ${bye} ${TEAMS[bye].name}</b>`;
   }
 
   // ---------- scenes ----------
@@ -686,10 +689,10 @@ body {
     $("intro").hidden = false;
     try {
       await intro();
-      await card("Revealing the field", "No. 12 to No. 1", "Each team drops into its spot in the bracket", 900);
-      for (let s = 12; s >= 1; s--) {
+      await card("The top four", "First-Round Byes", "Seeds 1 through 4 go straight to the quarterfinals", 1300);
+      for (let s = 1; s <= 12; s++) {
         await tapWait(`Tap to reveal the No. ${s} seed`);
-        if (s === 4) await card("The top four", "First-Round Byes", "Seeds 1 through 4 go straight to the quarterfinals", 1300);
+        if (s === 5) await card("The first round", "Seeds 5 to 12", "Higher seeds host on campus", 1300);
         await reveal(s);
       }
       await tapWait("Tap to set the field");
