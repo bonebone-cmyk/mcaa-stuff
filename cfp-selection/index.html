@@ -313,6 +313,7 @@ body {
   <button id="btnPlay" class="primary" type="button" disabled>Next</button>
   <button id="btnReplay" type="button">Start over</button>
   <button id="btnSkip" type="button">Skip to bracket</button>
+  <button id="btnSound" type="button" aria-pressed="true">Sound on</button>
 </div>
 <div class="hint">Turn your phone sideways for the full broadcast · tap the screen to reveal each team</div>
 
@@ -456,6 +457,191 @@ body {
   }
   function cancelAll() { all.forEach(a => a.cancel()); all.length = 0; live.clear(); }
 
+
+  // ---------- score: synthesized live with Web Audio ----------
+  const Music = (() => {
+    let ctx = null, master, comp, verb, padBus, ostBus, fxBus, noiseBuf;
+    let started = false, muted = false, level = 0, nextBar = 0, barIdx = 0, timer = null;
+    const BAR = 2; // one bar of 4/4 at 120 bpm
+    const MINOR = [[38, [50, 57, 62, 65]], [34, [46, 53, 58, 62]], [41, [53, 57, 60, 65]], [36, [48, 55, 60, 64]]];
+    const MAJOR = [[38, [50, 57, 62, 66]], [34, [46, 53, 58, 62]], [36, [48, 55, 60, 64]], [38, [50, 57, 62, 66]]];
+    const PAT = [0, 0, 12, 0, 7, 0, 12, 7];
+    let prog = MINOR;
+    const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+    try { muted = localStorage.getItem("cfp-muted") === "1"; } catch (e) {}
+
+    function impulse(sec) {
+      const len = Math.floor(ctx.sampleRate * sec), b = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (let c = 0; c < 2; c++) {
+        const d = b.getChannelData(c);
+        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2);
+      }
+      return b;
+    }
+    function bus(g, send) {
+      const n = ctx.createGain(); n.gain.value = g; n.connect(master);
+      const s = ctx.createGain(); s.gain.value = send; n.connect(s); s.connect(verb);
+      return n;
+    }
+    function init() {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      comp = ctx.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 4; comp.connect(ctx.destination);
+      master = ctx.createGain(); master.gain.value = muted ? 0 : 0.85; master.connect(comp);
+      verb = ctx.createConvolver(); verb.buffer = impulse(3.4);
+      const wet = ctx.createGain(); wet.gain.value = 0.5; verb.connect(wet); wet.connect(master);
+      padBus = bus(0.5, 0.7); ostBus = bus(0, 0.35); fxBus = bus(0.8, 0.6);
+      noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      document.addEventListener("visibilitychange", () => {
+        if (!started) return; document.hidden ? ctx.suspend() : ctx.resume();
+      });
+    }
+    const T = (dt = 0) => ctx.currentTime + dt;
+    function env(g, t, peak, a, dec) {
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(peak, t + a);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + a + dec);
+    }
+    function noise(t, dur) {
+      const n = ctx.createBufferSource(); n.buffer = noiseBuf; n.loop = true; n.start(t); n.stop(t + dur + .1); return n;
+    }
+    function saw(m, t, dur, detune, out, gain) {
+      const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = mtof(m); o.detune.value = detune;
+      const g = ctx.createGain(); g.gain.value = gain; o.connect(g); g.connect(out); o.start(t); o.stop(t + dur);
+    }
+
+    // bed: string pad, sub bass, pulsing low strings, ticks
+    function pad(t, root, notes, dur) {
+      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 800 + level * 450; f.Q.value = .6;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + 1.3);
+      g.gain.setValueAtTime(1, t + dur - .2); g.gain.linearRampToValueAtTime(0, t + dur + 1.4);
+      f.connect(g); g.connect(padBus);
+      notes.forEach(m => { saw(m, t, dur + 1.5, -8, f, .05); saw(m, t, dur + 1.5, 8, f, .05); });
+      const sub = ctx.createOscillator(); sub.type = "sine"; sub.frequency.value = mtof(root);
+      const sg = ctx.createGain(); sg.gain.value = .22; sub.connect(sg); sg.connect(g); sub.start(t); sub.stop(t + dur + 1.5);
+    }
+    function pluck(t, m, accent) {
+      const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = mtof(m);
+      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 5;
+      f.frequency.setValueAtTime(1400 + level * 400, t); f.frequency.exponentialRampToValueAtTime(300, t + .18);
+      const g = ctx.createGain(); env(g, t, accent ? .45 : .25, .005, .2);
+      o.connect(f); f.connect(g); g.connect(ostBus); o.start(t); o.stop(t + .3);
+    }
+    function tick(t, amp) {
+      const n = noise(t, .06), f = ctx.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 7000;
+      const g = ctx.createGain(); env(g, t, amp, .002, .05); n.connect(f); f.connect(g); g.connect(ostBus);
+    }
+    function scheduleBar(t) {
+      const [root, notes] = prog[Math.floor(barIdx / 2) % prog.length];
+      if (barIdx % 2 === 0) pad(t, root, notes, BAR * 2);
+      for (let i = 0; i < 8; i++) {
+        pluck(t + i * BAR / 8, root + 12 + PAT[i], i % 4 === 0);
+        if (level >= 2 && i % 2 === 1) tick(t + i * BAR / 8, .12);
+      }
+      if (level >= 2 && barIdx % 2 === 0) timpani(t, .35);
+    }
+    function loop() {
+      while (nextBar < ctx.currentTime + .5) { scheduleBar(nextBar); nextBar += BAR; barIdx++; }
+    }
+
+    // hits and effects
+    function timpani(t, amp = 1) {
+      const o = ctx.createOscillator(); o.type = "sine";
+      o.frequency.setValueAtTime(96, t); o.frequency.exponentialRampToValueAtTime(48, t + .5);
+      const g = ctx.createGain(); env(g, t, amp, .005, 1.6); o.connect(g); g.connect(fxBus); o.start(t); o.stop(t + 1.8);
+      const n = noise(t, .2), f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 700;
+      const ng = ctx.createGain(); env(ng, t, amp * .5, .002, .15); n.connect(f); f.connect(ng); ng.connect(fxBus);
+    }
+    function cymbal(t, amp, dur = 3) {
+      const n = noise(t, dur), f = ctx.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 4500;
+      const g = ctx.createGain(); env(g, t, amp, .01, dur); n.connect(f); f.connect(g); g.connect(fxBus);
+    }
+    function brass(t, notes, dur, bright) {
+      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 2;
+      f.frequency.setValueAtTime(150, t);
+      f.frequency.exponentialRampToValueAtTime(bright, t + .22);
+      f.frequency.exponentialRampToValueAtTime(500, t + dur);
+      const g = ctx.createGain(); env(g, t, .9, .05, dur);
+      f.connect(g); g.connect(fxBus);
+      notes.forEach(m => { saw(m, t, dur + .2, -10, f, .09); saw(m, t, dur + .2, 10, f, .09); });
+    }
+    const api = {
+      unlock() {
+        try {
+          if (!ctx) init();
+          if (ctx.state !== "running") ctx.resume();
+          if (!started) { started = true; nextBar = T(.1); loop(); timer = setInterval(loop, 60); }
+        } catch (e) {}
+      },
+      get muted() { return muted; },
+      setMuted(m) {
+        muted = m;
+        try { localStorage.setItem("cfp-muted", m ? "1" : "0"); } catch (e) {}
+        if (ctx) master.gain.setTargetAtTime(m ? 0 : .85, T(), .08);
+      },
+      setLevel(l) {
+        level = l; if (!ctx) return;
+        padBus.gain.setTargetAtTime([.45, .55, .65, .75][l], T(), .6);
+        ostBus.gain.setTargetAtTime([0, .45, .7, .85][l], T(), .6);
+      },
+      reset() { prog = MINOR; api.setLevel(0); },
+      timpani(dt = 0, amp = 1) { if (started) timpani(T(dt), amp); },
+      swell() { if (!started) return; timpani(T(), .55); cymbal(T(), .08, 2.2); },
+      riser(dur = .8) {
+        if (!started) return;
+        const t = T(), n = noise(t, dur), f = ctx.createBiquadFilter(); f.type = "bandpass"; f.Q.value = 1.4;
+        f.frequency.setValueAtTime(250, t); f.frequency.exponentialRampToValueAtTime(6000, t + dur);
+        const g = ctx.createGain(); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.5, t + dur);
+        g.gain.linearRampToValueAtTime(0, t + dur + .05);
+        n.connect(f); f.connect(g); g.connect(fxBus);
+        const o = ctx.createOscillator(); o.type = "sine"; o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(440, t + dur);
+        const og = ctx.createGain(); og.gain.setValueAtTime(.0001, t); og.gain.exponentialRampToValueAtTime(.12, t + dur); og.gain.linearRampToValueAtTime(0, t + dur + .05);
+        o.connect(og); og.connect(fxBus); o.start(t); o.stop(t + dur + .1);
+      },
+      braam(big, dt = 0) {
+        if (!started) return;
+        const t = T(dt);
+        brass(t, big ? [38, 45, 50, 57, 62] : [38, 45, 50], big ? 3.4 : 2.6, big ? 3200 : 2200);
+        timpani(t, 1);
+        if (big) cymbal(t, .3, 3.5);
+      },
+      fanfare(dt = 0) {
+        if (!started) return;
+        const t = T(dt);
+        [[62, 66, 69], [62, 66, 69], [64, 67, 71], [66, 69, 74]].forEach((c, i) => brass(t + i * .28, c, i === 3 ? 2.4 : .3, 3000));
+      },
+      whoosh() {
+        if (!started) return;
+        const t = T(), n = noise(t, .8), f = ctx.createBiquadFilter(); f.type = "bandpass"; f.Q.value = 1;
+        f.frequency.setValueAtTime(2800, t); f.frequency.exponentialRampToValueAtTime(280, t + .75);
+        const g = ctx.createGain(); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.35, t + .25); g.gain.exponentialRampToValueAtTime(.0001, t + .8);
+        n.connect(f); f.connect(g); g.connect(fxBus);
+      },
+      chime(seed) {
+        if (!started) return;
+        const t = T(), m = [74, 76, 77, 79, 81, 82, 84, 86, 88, 89, 91, 93][seed - 1];
+        [[1, .2], [2.76, .07], [5.4, .03]].forEach(([r, a]) => {
+          const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = mtof(m) * r;
+          const g = ctx.createGain(); env(g, t, a, .003, 2.4); o.connect(g); g.connect(fxBus); o.start(t); o.stop(t + 2.6);
+        });
+        timpani(t, .3);
+      },
+      finale(hitAt = 2) {
+        if (!started) return;
+        const t = T();
+        for (let i = 0; i < 16; i++) timpani(t + hitAt * (1 - Math.pow(1 - i / 16, .6)) * .9, .2 + .5 * i / 16);
+        const h = t + hitAt;
+        brass(h, [38, 45, 50, 54, 57, 62, 66, 69], 4.5, 3400);
+        timpani(h, 1.1); cymbal(h, .45, 4.5);
+        prog = MAJOR;
+        setTimeout(() => api.setLevel(3), hitAt * 1000);
+        setTimeout(() => { if (level === 3) api.setLevel(1); }, hitAt * 1000 + 7000);
+      },
+    };
+    return api;
+  })();
+
   // ---------- tap to advance ----------
   let pending = null;
   function tapWait(text, right = false) {
@@ -564,6 +750,7 @@ body {
     A($("introSub"), [{ opacity: 0, transform: "translateY(16px)" }, { opacity: 1, transform: "none" }], { duration: 700, delay: 800 });
     await wait(1300);
     await tapWait("Tap to start the show");
+    Music.unlock(); Music.setLevel(1); Music.timpani(0, .9);
     A(el, [{ opacity: 1 }, { opacity: 0 }], { duration: 700 });
     dimPaths.forEach((p, i) => {
       const L = p.getTotalLength();
@@ -576,6 +763,7 @@ body {
 
   async function card(kick, big, sub, hold = 1300) {
     const el = $("inter"); el.hidden = false;
+    Music.swell();
     $("interKick").textContent = kick; $("interBig").textContent = big; $("interSub").textContent = sub;
     A(el, [{ opacity: 0 }, { opacity: 1 }], { duration: 350 });
     A($("interBig"), [{ clipPath: "inset(0 50% 0 50%)", letterSpacing: ".12em" }, { clipPath: "inset(0 0 0 0)", letterSpacing: "0em" }], { duration: 700, delay: 100 });
@@ -587,6 +775,8 @@ body {
 
   async function reveal(seed) {
     const t = TEAMS[seed], rv = $("rv");
+    Music.braam(seed <= 4, .3);
+    if (seed === 1) Music.fanfare(1.1);
     paint(rv, t);
     $("rvGhost").textContent = seed;
     $("rvImg").src = t.logo; $("rvImg").className = t.px ? "px" : "";
@@ -630,6 +820,7 @@ body {
     Object.assign(fly.style, { left: "220px", top: "250px" });
     fly.appendChild(logoImg(t));
     stage.appendChild(fly);
+    Music.whoosh();
     A($("rvPlate"), [{ opacity: 0 }, { opacity: 0 }], { duration: 1 });
     A($("rvText"), [{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateX(60px)" }], { duration: 350, easing: "ease-in" });
     A($("rvRays"), [{ opacity: 1 }, { opacity: 0 }], { duration: 300 });
@@ -643,6 +834,7 @@ body {
       { transform: `translate(${tx - 220}px, ${ty - 250}px) scale(${k})` }], { duration: 900, easing: "cubic-bezier(.55,0,.25,1)" });
     await wait(900);
     fly.remove(); rv.hidden = true;
+    Music.chime(seed);
     fillSlot(seed); setCount(revealed + 1);
     const slot = slotEls[seed];
     A(slot, [{ boxShadow: `0 0 0 2px ${t.c1}, 0 0 46px ${t.c1}` }, { boxShadow: "0 0 0 0 transparent, 0 0 0 transparent" }], { duration: 1100, easing: "ease-out" });
@@ -654,6 +846,7 @@ body {
   }
 
   async function finale() {
+    Music.finale(2);
     await wait(300);
     litPaths.forEach((p, i) => {
       const L = p.getTotalLength();
@@ -673,6 +866,7 @@ body {
   }
 
   function resetView() {
+    Music.reset();
     token++; cancelAll(); parts = [];
     if (pending) { const p = pending; pending = null; p.rej(ABORT); }
     endWait();
@@ -689,10 +883,14 @@ body {
     $("intro").hidden = false;
     try {
       await intro();
+      Music.setLevel(2);
       await card("The top four", "First-Round Byes", "Seeds 1 through 4 go straight to the quarterfinals", 1300);
       for (let s = 1; s <= 12; s++) {
         await tapWait(`Tap to reveal the No. ${s} seed`);
-        if (s === 5) await card("The first round", "Seeds 5 to 12", "Higher seeds host on campus", 1300);
+        if (s === 5) { Music.setLevel(1); await card("The first round", "Seeds 5 to 12", "Higher seeds host on campus", 1300); }
+        if (s === 9) Music.setLevel(2);
+        Music.riser(.8);
+        await wait(800);
         await reveal(s);
       }
       await tapWait("Tap to set the field");
@@ -703,6 +901,7 @@ body {
 
   function showFinal() {
     resetView();
+    Music.setLevel(1);
     $("intro").hidden = true;
     for (let s = 1; s <= 12; s++) fillSlot(s);
     setDash(dimPaths, false); setDash(litPaths, false);
@@ -714,6 +913,14 @@ body {
   $("btnReplay").addEventListener("click", play);
   $("btnSkip").addEventListener("click", showFinal);
   stage.addEventListener("click", advance);
+  // audio may only start from a gesture: the first tap or key press unlocks it
+  ["pointerdown", "keydown"].forEach(ev => document.addEventListener(ev, () => Music.unlock()));
+  const syncSound = () => {
+    $("btnSound").textContent = Music.muted ? "Sound off" : "Sound on";
+    $("btnSound").setAttribute("aria-pressed", String(!Music.muted));
+  };
+  $("btnSound").addEventListener("click", () => { Music.setMuted(!Music.muted); syncSound(); });
+  syncSound();
   document.addEventListener("keydown", e => {
     if (["Space", "Enter", "ArrowRight"].includes(e.code) && (e.target === document.body || e.target === stage)) {
       e.preventDefault(); advance();
