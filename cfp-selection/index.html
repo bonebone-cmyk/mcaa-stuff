@@ -184,6 +184,21 @@ body {
 
 .fly { position: absolute; z-index: 30; transform-origin: 0 0; pointer-events: none; }
 .confetti { position: absolute; inset: 0; z-index: 40; pointer-events: none; }
+.stage.waiting { cursor: pointer; }
+.tap {
+  position: absolute; left: 50%; bottom: 74px; z-index: 35; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 14px; white-space: nowrap; pointer-events: none;
+  padding: 14px 26px 13px; border-radius: 999px;
+  background: rgba(4, 9, 20, .78); border: 1.5px solid rgba(224,187,98,.7);
+  box-shadow: 0 0 30px rgba(224,187,98,.25), 0 10px 30px rgba(0,0,0,.5);
+  font: 700 24px/1 var(--cond); letter-spacing: .2em; text-transform: uppercase; color: var(--chalk);
+  animation: bob 1.8s ease-in-out infinite;
+}
+.tap .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 0 rgba(224,187,98,.7); animation: ping 1.4s ease-out infinite; }
+.tap.right { left: 1275px; }
+@keyframes bob { 50% { transform: translateX(-50%) translateY(-6px); } }
+@keyframes ping { to { box-shadow: 0 0 0 16px rgba(224,187,98,0); } }
+@media (prefers-reduced-motion: reduce) { .tap, .tap .dot { animation: none; } }
 
 /* ---------- controls ---------- */
 .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; }
@@ -195,6 +210,7 @@ body {
 .controls button:hover { border-color: var(--gold); }
 .controls button:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .controls button.primary { background: var(--gold); color: #1d1404; border-color: var(--gold); }
+.controls button:disabled { opacity: .45; cursor: default; }
 .speed { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
 .speed button { border: 0; border-radius: 0; background: transparent; padding: 11px 14px; }
 .speed button[aria-pressed="true"] { background: var(--chip); color: var(--gold); }
@@ -288,20 +304,17 @@ body {
       </div>
     </div>
 
+    <div class="tap" id="tap" hidden><span class="dot"></span><span id="tapText">Tap to continue</span></div>
     <canvas class="confetti" id="confetti" width="1600" height="900"></canvas>
   </div>
 </div>
 
 <div class="controls" role="group" aria-label="Playback">
-  <button id="btnPlay" class="primary" type="button">Pause</button>
-  <button id="btnReplay" type="button">Replay</button>
+  <button id="btnPlay" class="primary" type="button" disabled>Next</button>
+  <button id="btnReplay" type="button">Start over</button>
   <button id="btnSkip" type="button">Skip to bracket</button>
-  <span class="speed" role="group" aria-label="Speed">
-    <button id="sp1" type="button" aria-pressed="true">1×</button>
-    <button id="sp2" type="button" aria-pressed="false">2×</button>
-  </span>
 </div>
-<div class="hint">Turn your phone sideways for the full broadcast</div>
+<div class="hint">Turn your phone sideways for the full broadcast · tap the screen to reveal each team</div>
 
 <script>
 (() => {
@@ -443,6 +456,28 @@ body {
   }
   function cancelAll() { all.forEach(a => a.cancel()); all.length = 0; live.clear(); }
 
+  // ---------- tap to advance ----------
+  let pending = null;
+  function tapWait(text, right = false) {
+    $("tapText").textContent = text;
+    $("tap").classList.toggle("right", right);
+    $("tap").hidden = false;
+    stage.classList.add("waiting");
+    $("btnPlay").disabled = false;
+    A($("tap"), [{ opacity: 0 }, { opacity: 1 }], { duration: 300, fill: "none" });
+    return new Promise((res, rej) => { pending = { res, rej }; });
+  }
+  function endWait() {
+    $("tap").hidden = true;
+    stage.classList.remove("waiting");
+    $("btnPlay").disabled = !done;
+  }
+  function advance() {
+    if (!pending) return;
+    const p = pending; pending = null;
+    endWait(); p.res();
+  }
+
   // ---------- confetti ----------
   const cv = $("confetti"), cx = cv.getContext("2d");
   let parts = [], running = false, lastT = 0;
@@ -524,7 +559,8 @@ body {
     A($("introKick"), [{ opacity: 0, letterSpacing: ".8em" }, { opacity: 1, letterSpacing: ".34em" }], { duration: 900 });
     A($("introBig"), [{ opacity: 0, transform: "scale(1.25)", filter: "blur(12px)" }, { opacity: 1, transform: "scale(1)", filter: "blur(0)" }], { duration: 1100, delay: 200 });
     A($("introSub"), [{ opacity: 0, transform: "translateY(16px)" }, { opacity: 1, transform: "none" }], { duration: 700, delay: 800 });
-    await wait(2600);
+    await wait(1300);
+    await tapWait("Tap to start the show");
     A(el, [{ opacity: 1 }, { opacity: 0 }], { duration: 700 });
     dimPaths.forEach((p, i) => {
       const L = p.getTotalLength();
@@ -578,13 +614,9 @@ body {
 
     await wait(900);
     burst(420, 450, [t.c1, t.c2, "#ffffff", "#e0bb62"], seed <= 4 ? 110 : 60, seed <= 4 ? 1.15 : .9);
-    let hold = seed <= 4 ? 2500 : 1750;
-    if (seed === 1) {
-      await wait(500);
-      rain([t.c1, t.c2, "#ffffff", "#e0bb62"], 220);
-      hold = 2700;
-    }
-    await wait(hold);
+    await wait(seed <= 4 ? 600 : 250);
+    if (seed === 1) rain([t.c1, t.c2, "#ffffff", "#e0bb62"], 220);
+    await tapWait("Tap to place in the bracket", true);
 
     // exit: plate flies into its bracket slot
     const s = stageScale(), sr = stage.getBoundingClientRect();
@@ -639,6 +671,8 @@ body {
 
   function resetView() {
     token++; cancelAll(); parts = [];
+    if (pending) { const p = pending; pending = null; p.rej(ABORT); }
+    endWait();
     ["rv", "inter", "finale"].forEach(id => $(id).hidden = true);
     stage.querySelectorAll(".fly").forEach(f => f.remove());
     for (let s = 1; s <= 12; s++) clearSlot(s);
@@ -647,18 +681,20 @@ body {
 
   async function play() {
     resetView();
-    setPaused(false);
+    $("btnPlay").textContent = "Next"; $("btnPlay").disabled = true;
     setDash(dimPaths, true); setDash(litPaths, true);
     $("intro").hidden = false;
     try {
       await intro();
-      await card("Revealing the field", "No. 12 to No. 1", "Each team drops into its spot in the bracket");
+      await card("Revealing the field", "No. 12 to No. 1", "Each team drops into its spot in the bracket", 900);
       for (let s = 12; s >= 1; s--) {
-        if (s === 4) await card("The top four", "First-Round Byes", "Seeds 1 through 4 go straight to the quarterfinals", 1500);
+        await tapWait(`Tap to reveal the No. ${s} seed`);
+        if (s === 4) await card("The top four", "First-Round Byes", "Seeds 1 through 4 go straight to the quarterfinals", 1300);
         await reveal(s);
       }
+      await tapWait("Tap to set the field");
       await finale();
-      $("btnPlay").textContent = "Play again";
+      $("btnPlay").textContent = "Play again"; $("btnPlay").disabled = false;
     } catch (e) { if (e !== ABORT) throw e; }
   }
 
@@ -668,30 +704,17 @@ body {
     for (let s = 1; s <= 12; s++) fillSlot(s);
     setDash(dimPaths, false); setDash(litPaths, false);
     done = true; setCount(12);
-    setPaused(false);
+    $("btnPlay").textContent = "Play again"; $("btnPlay").disabled = false;
   }
 
-  function setPaused(p) {
-    paused = p;
-    live.forEach(a => p ? a.pause() : a.play());
-    $("btnPlay").textContent = p ? "Play" : (done ? "Play again" : "Pause");
-  }
-  function setSpeed(v) {
-    speed = v;
-    live.forEach(a => a.playbackRate = v);
-    $("sp1").setAttribute("aria-pressed", v === 1); $("sp2").setAttribute("aria-pressed", v === 2);
-  }
-
-  $("btnPlay").addEventListener("click", () => {
-    if (done && !paused) { play(); return; }
-    setPaused(!paused);
-  });
+  $("btnPlay").addEventListener("click", () => { if (pending) advance(); else if (done) play(); });
   $("btnReplay").addEventListener("click", play);
   $("btnSkip").addEventListener("click", showFinal);
-  $("sp1").addEventListener("click", () => setSpeed(1));
-  $("sp2").addEventListener("click", () => setSpeed(2));
+  stage.addEventListener("click", advance);
   document.addEventListener("keydown", e => {
-    if (e.code === "Space" && e.target === document.body) { e.preventDefault(); $("btnPlay").click(); }
+    if (["Space", "Enter", "ArrowRight"].includes(e.code) && (e.target === document.body || e.target === stage)) {
+      e.preventDefault(); advance();
+    }
   });
 
   // preload logos so reveals never pop in late
