@@ -18,6 +18,7 @@ async function main() {
       console.log('✓ local auth stub');
     }
     await sql`create table if not exists public._cfu_migrations (name text primary key, applied_at timestamptz default now())`;
+    await sql`alter table public._cfu_migrations enable row level security`;
     const applied = new Set((await sql`select name from public._cfu_migrations`).map((r) => r.name));
     const dir = path.join('supabase', 'migrations');
     for (const file of readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()) {

@@ -1,0 +1,47 @@
+# One-click database setup — run it from GitHub: Actions → "Set up database" → Run workflow.
+# Needs a repository secret named DATABASE_URL (Settings → Secrets and variables → Actions).
+name: Set up database
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: What to run
+        type: choice
+        default: migrate-and-seed-demo
+        options:
+          - migrate-and-seed-demo   # schema + 138 teams + demo season (recommended first run)
+          - migrate-and-base-only   # schema + 138 teams, no demo data
+          - migrate-only
+          - make-commissioner
+      email:
+        description: Your account email (only for make-commissioner — sign up on the site first)
+        required: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Check secret
+        run: test -n "$DATABASE_URL" || (echo "Add the DATABASE_URL repository secret first" && exit 1)
+      - name: Migrate
+        if: inputs.task != 'make-commissioner'
+        run: npm run db:migrate
+      - name: Seed demo universe
+        if: inputs.task == 'migrate-and-seed-demo'
+        run: npm run db:seed
+      - name: Seed base data only
+        if: inputs.task == 'migrate-and-base-only'
+        run: npm run db:seed -- --base-only
+      - name: Make commissioner
+        if: inputs.task == 'make-commissioner'
+        env:
+          EMAIL: ${{ inputs.email }}
+        run: npm run make-commissioner -- "$EMAIL"

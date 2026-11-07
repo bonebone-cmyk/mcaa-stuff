@@ -43,7 +43,34 @@ npm run make-commissioner -- you@example.com
 After that you can assign owners, run weeks and manage everything from **Commissioner Panel**. No code edits needed.
 
 ### Deploying
-Any Next.js host works (Vercel recommended). Set the same environment variables there. The build doesn't need database access.
+See **Deploy to Cloudflare** below. Vercel or any other Next.js host also works with the same environment variables; the build doesn't need database access.
+
+---
+
+## Deploy to Cloudflare (Workers)
+
+The site runs as a Cloudflare Worker through the official OpenNext adapter (`wrangler.jsonc`, `open-next.config.ts`).
+
+> **You need the Workers Paid plan ($5/month).** The free plan allows 10 ms of CPU per request. Page rendering, simulating a week and processing recruiting need far more. `wrangler.jsonc` raises the limit to 5 minutes, which only paid accounts can use.
+
+1. **Supabase.** Create the project as in Quick start step 1.
+2. **Database (no local setup needed).**
+   - In GitHub: **Settings → Secrets and variables → Actions → New repository secret**. Name it `DATABASE_URL` and use your Supabase pooler connection string as the value.
+   - Then **Actions → Set up database → Run workflow → `migrate-and-seed-demo`**.
+3. **Cloudflare.**
+   - Go to **Workers & Pages → Create → Import a repository** and pick this repo and branch.
+   - Name the Worker `college-football-universe`. It must match `name` in `wrangler.jsonc`.
+   - Build command: `npx opennextjs-cloudflare build`. Deploy command: `npx opennextjs-cloudflare deploy`.
+   - **Build variables:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL`. These are baked into the browser code at build time.
+   - **Worker variables and secrets** (Settings → Variables and Secrets): the same three, plus `DATABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` as secrets.
+4. **Supabase Auth URLs.** Set the Site URL to your `*.workers.dev` (or custom) domain and add `<that URL>/auth/callback` as a redirect URL.
+5. **Commissioner.** Sign up on the live site, then run **Actions → Set up database → `make-commissioner`** with your email.
+
+**Optional: Hyperdrive.** In Cloudflare, go to **Storage & Databases → Hyperdrive → Create**. Paste Supabase's *direct* connection string (port 5432), then uncomment the `hyperdrive` block in `wrangler.jsonc` with its ID. The app uses `HYPERDRIVE` automatically when it's present.
+
+**From your own computer instead:** run `npx wrangler login`, then `npm run cf:deploy`. `npm run cf:preview` runs the Worker locally; put your secrets in `.dev.vars` (see `.dev.vars.example`).
+
+**What was verified:** the Cloudflare build succeeds (2.1 MB compressed). Under Cloudflare's local runtime (`wrangler dev`), every page rendered from the database, and these all worked: advancing a week, simulating a 69-game week, recruiting offers and an exhibition live sim. It has not yet been deployed to a real Cloudflare account.
 
 ---
 

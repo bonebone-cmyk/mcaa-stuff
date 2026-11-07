@@ -1,4 +1,5 @@
 import postgres from 'postgres';
+import { cache } from 'react';
 
 /**
  * Server-side Postgres connection (Supabase connection string). All official
@@ -12,7 +13,7 @@ const globalForDb = globalThis as unknown as { __cfuSql?: Sql };
 
 export function createSql(url: string, opts: { max?: number } = {}): Sql {
   return postgres(url, {
-    prepare: false, // required for Supabase's transaction pooler
+    prepare: false, // required for Supabase's transaction pooler and Cloudflare Hyperdrive
     max: opts.max ?? 5,
     idle_timeout: 20,
     // snake_case columns <-> camelCase fields (JSON payloads are left untouched)
@@ -26,7 +27,28 @@ export function createSql(url: string, opts: { max?: number } = {}): Sql {
   });
 }
 
+/** True when running inside a Cloudflare Worker (deployed via OpenNext) */
+const onCloudflare = () => typeof navigator !== 'undefined' && navigator.userAgent === 'Cloudflare-Workers';
+
+/**
+ * Hyperdrive binding if configured in wrangler.jsonc, otherwise the DATABASE_URL secret.
+ * OpenNext's worker stores the request's Cloudflare context on this global symbol.
+ */
+function cloudflareConnectionString(): string | undefined {
+  const ctx = (globalThis as any)[Symbol.for('__cloudflare-context__')] as { env?: Record<string, any> } | undefined;
+  const env = ctx?.env ?? {};
+  return env.HYPERDRIVE?.connectionString ?? (typeof env.DATABASE_URL === 'string' ? env.DATABASE_URL : undefined) ?? process.env.DATABASE_URL;
+}
+
+// Cloudflare Workers cannot share sockets between requests: one client per request.
+const requestSql = cache((): Sql => {
+  const url = cloudflareConnectionString();
+  if (!url) throw new Error('DATABASE_URL (or a HYPERDRIVE binding) is not configured.');
+  return createSql(url, { max: 3 });
+});
+
 export function getSql(): Sql {
+  if (onCloudflare()) return requestSql();
   if (!globalForDb.__cfuSql) {
     const url = process.env.DATABASE_URL;
     if (!url) throw new Error('DATABASE_URL is not configured. See .env.example.');
