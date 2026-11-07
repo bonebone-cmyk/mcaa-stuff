@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: 244 244 245;
+  --surface: 255 255 255;
+  --surface-2: 240 240 242;
+  --line: 226 226 231;
+  --fg: 12 12 14;
+  --muted: 92 92 104;
+  --accent: 213 10 10;
+  --accent-fg: 255 255 255;
+  --win: 22 163 74;
+  --loss: 220 38 38;
+  --gold: 202 138 4;
+  color-scheme: light;
+}
+.dark {
+  --bg: 9 9 11;
+  --surface: 20 20 23;
+  --surface-2: 29 29 34;
+  --line: 42 42 49;
+  --fg: 244 244 245;
+  --muted: 161 161 170;
+  --accent: 230 29 46;
+  --accent-fg: 255 255 255;
+  --win: 74 222 128;
+  --loss: 248 113 113;
+  --gold: 250 204 21;
+  color-scheme: dark;
+}
+
+html, body { background: rgb(var(--bg)); color: rgb(var(--fg)); }
+body { -webkit-font-smoothing: antialiased; }
+
+@layer components {
+  .card { @apply min-w-0 rounded-2xl border border-line bg-surface shadow-card; }
+  .card-pad { @apply p-4 sm:p-5; }
+  .section-title { @apply font-display text-lg font-bold uppercase tracking-wide; }
+  .eyebrow { @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-muted; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold transition active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply btn bg-accent text-accent-fg hover:brightness-110; }
+  .btn-ghost { @apply btn border border-line bg-surface hover:bg-surface-2; }
+  .btn-danger { @apply btn border border-loss/40 bg-loss/10 text-loss hover:bg-loss/20; }
+  .btn-sm { @apply px-2.5 py-1.5 text-xs; }
+  .input { @apply w-full rounded-xl border border-line bg-surface-2 px-3 py-2 text-sm outline-none ring-accent/40 placeholder:text-muted focus:ring-2; }
+  .label { @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-muted; }
+  .table { @apply w-full text-sm; }
+  .table th { @apply whitespace-nowrap border-b border-line px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-muted; }
+  .table td { @apply whitespace-nowrap border-b border-line/60 px-3 py-2; }
+  .table tr:last-child td { @apply border-b-0; }
+  .table tbody tr { @apply transition hover:bg-surface-2/60; }
+  .chip { @apply inline-flex items-center gap-1 rounded-full border border-line bg-surface-2 px-2 py-0.5 text-[11px] font-semibold; }
+  .tabular { font-variant-numeric: tabular-nums; }
+  .prose-article { @apply max-w-none text-[17px] leading-8; }
+  .prose-article h2 { @apply mt-8 mb-3 font-display text-2xl font-bold; }
+  .prose-article h3 { @apply mt-6 mb-2 font-display text-xl font-bold; }
+  .prose-article p { @apply my-4; }
+  .prose-article a { @apply font-semibold text-accent underline-offset-2 hover:underline; }
+  .prose-article ul { @apply my-4 list-disc pl-6; }
+  .prose-article ol { @apply my-4 list-decimal pl-6; }
+  .prose-article blockquote { @apply my-6 border-l-4 border-accent pl-4 italic text-muted; }
+  .prose-article img { @apply my-6 rounded-xl; }
+  .prose-article iframe { @apply my-6 aspect-video w-full rounded-xl; }
+}
+
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { scrollbar-width: none; }
+.ProseMirror { min-height: 320px; outline: none; }
+.ProseMirror p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: rgb(var(--muted)); float: left; height: 0; pointer-events: none; }
+
+/* grid/flex children must be allowed to shrink so wide tables scroll inside their card */
+.grid > * { min-width: 0; }

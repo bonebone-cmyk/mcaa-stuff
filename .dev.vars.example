@@ -1,0 +1,6 @@
+# Copy to .dev.vars for `npm run cf:preview` (local Cloudflare Worker preview). Never commit .dev.vars.
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+DATABASE_URL=postgresql://postgres.YOUR-PROJECT:PASSWORD@aws-0-us-east-1.pooler.supabase.com:6543/postgres
+NEXT_PUBLIC_SITE_URL=http://localhost:8787

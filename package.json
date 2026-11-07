@@ -1,0 +1,53 @@
+{
+  "name": "college-football-universe",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:reset-demo": "tsx scripts/seed.ts --reset",
+    "make-commissioner": "tsx scripts/make-commissioner.ts",
+    "lifecycle-check": "tsx scripts/lifecycle-check.ts",
+    "db:migrate:local": "tsx scripts/migrate.ts --local-auth-stub",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf:upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload"
+  },
+  "dependencies": {
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.118.0",
+    "@tiptap/extension-image": "3.32.0",
+    "@tiptap/extension-youtube": "3.32.0",
+    "@tiptap/pm": "3.32.0",
+    "@tiptap/react": "3.32.0",
+    "@tiptap/starter-kit": "3.32.0",
+    "next": "16.4.3",
+    "postgres": "3.4.9",
+    "react": "19.2.9",
+    "react-dom": "19.2.9",
+    "sanitize-html": "2.18.1",
+    "server-only": "^0.0.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.13",
+    "@types/node": "22.15.3",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "@types/sanitize-html": "2.15.0",
+    "autoprefixer": "10.4.21",
+    "postcss": "8.5.31",
+    "tailwindcss": "3.4.19",
+    "tsx": "4.19.4",
+    "typescript": "5.9.3",
+    "vitest": "4.1.12",
+    "wrangler": "^4.154.0"
+  }
+}

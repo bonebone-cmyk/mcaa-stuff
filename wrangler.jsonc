@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Cloudflare Worker that serves the whole site (built by `npm run cf:build`)
+  "name": "college-football-universe",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": { "enabled": true },
+  // Requires the Workers Paid plan: simulating a week and processing recruiting need more than the free plan's 10 ms CPU.
+  "limits": { "cpu_ms": 300000 }
+  // Optional but recommended: Cloudflare Hyperdrive pools connections to Supabase Postgres.
+  // Create one (see README → Deploy to Cloudflare) and uncomment, replacing the id:
+  // ,"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "<your-hyperdrive-id>" }]
+}
